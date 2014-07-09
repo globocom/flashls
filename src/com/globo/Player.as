@@ -76,6 +76,23 @@ package com.globo {
             }
         };
 
+        override protected function _mediaTimeHandler(event : HLSEvent) : void {
+            _duration = event.mediatime.duration;
+            _media_position = event.mediatime.position;
+
+            var videoWidth : int = _video ? _video.videoWidth : _stageVideo.videoWidth;
+            var videoHeight : int = _video ? _video.videoHeight : _stageVideo.videoHeight;
+
+            if (videoWidth && videoHeight) {
+                var changed : Boolean = _videoWidth != videoWidth || _videoHeight != videoHeight;
+                if (changed) {
+                    _videoHeight = videoHeight;
+                    _videoWidth = videoWidth;
+                    _resize();
+                }
+            }
+        };
+
         override protected function _load(url : String) : void {
             _url = url;
             super._load(url);
