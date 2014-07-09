@@ -30,6 +30,7 @@ package com.globo {
             ExternalInterface.addCallback("globoGetLevels", _getLevels);
             ExternalInterface.addCallback("globoGetbufferLength", _getbufferLength);
             ExternalInterface.addCallback("globoGetAutoLevel", _getAutoLevel);
+            ExternalInterface.addCallback("globoGetLastProgramDate", _getLastProgramDate);
             ExternalInterface.addCallback("globoGetDroppedFrames", _getDroppedFrames);
             ExternalInterface.addCallback("globoRemoveLevel", _removeLevel);
 
@@ -75,6 +76,10 @@ package com.globo {
         private function _setScaleMode(mode:String):void {
             stage.scaleMode = mode;
             _onStageResize();
+        };
+
+        private function _getLastProgramDate():Number {
+            return _hls.lastProgramDate;
         };
    }
 }

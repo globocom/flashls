@@ -2,11 +2,11 @@ package org.mangui.hls.playlist {
     import flash.events.*;
     import flash.net.*;
     import flash.utils.*;
-    
+
     import org.mangui.hls.*;
     import org.mangui.hls.model.Level;
     import org.mangui.hls.model.Fragment;
-    
+
     CONFIG::LOGGING {
     import org.mangui.hls.utils.Log;
     }
@@ -38,6 +38,7 @@ package org.mangui.hls.playlist {
         /* playlist retry timeout */
         private var _retry_timeout : Number;
         private var _retry_count : int;
+        private var _last_program_date:Number = -1;
 
         /** Setup the loader. **/
         public function ManifestLoader(hls : HLS) {
@@ -108,6 +109,11 @@ package org.mangui.hls.playlist {
             return _type;
         };
 
+        /** Return the program date of last fragment **/
+        public function get lastProgramDate() : Number {
+            return _last_program_date;
+        };
+
         /** Load the manifest file. **/
         public function load(url : String) : void {
             _close();
@@ -148,6 +154,7 @@ package org.mangui.hls.playlist {
                 Log.debug("level " + index + " playlist:\n" + string);
                 }
                 var frags : Vector.<Fragment> = Manifest.getFragments(string, url);
+                _last_program_date = frags[frags.length-1].program_date;
                 // set fragment and update sequence number range
                 _levels[index].updateFragments(frags);
                 _levels[index].targetduration = Manifest.getTargetDuration(string);

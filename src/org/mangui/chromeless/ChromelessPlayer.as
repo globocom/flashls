@@ -417,7 +417,7 @@ package org.mangui.chromeless {
             }
         };
 
-        protected function _onStageResize(event : Event) : void {
+        protected function _onStageResize(event : Event=null) : void {
             stage.fullScreenSourceRect = new Rectangle(0, 0, stage.stageWidth, stage.stageHeight);
             _sheet.width = stage.stageWidth;
             _sheet.height = stage.stageHeight;

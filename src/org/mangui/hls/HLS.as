@@ -5,7 +5,7 @@ package org.mangui.hls {
     import flash.net.URLStream;
     import flash.events.EventDispatcher;
     import flash.events.Event;
-    
+
     import org.mangui.hls.playlist.AltAudioTrack;
     import org.mangui.hls.model.Level;
     import org.mangui.hls.playlist.ManifestLoader;
@@ -15,7 +15,7 @@ package org.mangui.hls {
     CONFIG::LOGGING {
     import org.mangui.hls.utils.Log;
     }
-    
+
     /** Class that manages the streaming process. **/
     public class HLS extends EventDispatcher {
         /** The quality monitor. **/
@@ -96,6 +96,11 @@ package org.mangui.hls {
         public function get levels() : Vector.<Level> {
             return _manifestLoader.levels;
         };
+
+        /** Return the last  program date **/
+        public function get lastProgramDate() : Number {
+            return _manifestLoader.lastProgramDate;
+        }
 
         /** Return metrics info **/
         public function get metrics() : HLSMetrics {
