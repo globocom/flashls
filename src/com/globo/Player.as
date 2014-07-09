@@ -42,6 +42,7 @@ package com.globo {
             ExternalInterface.addCallback("globoPlayerSetLevel", _setLevel);
             ExternalInterface.addCallback("globoPlayerSmoothSetLevel", _smoothSetLevel);
             ExternalInterface.addCallback("globoPlayerSetflushLiveURLCache", _setflushLiveURLCache);
+            ExternalInterface.addCallback("globoPlayerSetStageScaleMode", _setScaleMode);
 
             setTimeout(_pingJavascript, 50);
         };
@@ -68,6 +69,11 @@ package com.globo {
 
         private function _removeLevel(pos:Number):void {
             _hls.removeLevel(pos);
+        };
+
+        private function _setScaleMode(mode:String):void {
+            stage.scaleMode = mode;
+            _onStageResize();
         };
    }
 }
