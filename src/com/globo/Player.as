@@ -5,6 +5,7 @@ package com.globo {
     import org.mangui.hls.utils.Log;
 
     import flash.display.*;
+    import flash.media.Video;
     import flash.events.*;
     import flash.external.ExternalInterface;
     import flash.geom.Rectangle;
