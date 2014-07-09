@@ -438,6 +438,11 @@ package org.mangui.hls.stream {
             }
         };
 
+        /** get Dropped Frames **/
+        public function get droppedFrames() : int {
+            return super.info.droppedFrames;
+        };
+
         /** Start playing data in the buffer. **/
         override public function seek(position : Number) : void {
             CONFIG::LOGGING {

@@ -103,6 +103,11 @@ package org.mangui.hls {
             return _hlsNetStream.position;
         };
 
+        /** Return the overall dropped frames **/
+        public function get droppedFrames() : int {
+            return _hlsNetStream.droppedFrames;
+        };
+
         /** Return the current playback state. **/
         public function get playbackState() : String {
             return _hlsNetStream.playbackState;
