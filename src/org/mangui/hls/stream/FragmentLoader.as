@@ -532,7 +532,10 @@ package org.mangui.hls.stream {
 
         /** Catch IO and security errors. **/
         private function _fragLoadErrorHandler(event : ErrorEvent) : void {
-            if (event is SecurityErrorEvent) {
+            if (_frag_load_status === 403) {
+                _hls.dispatchEvent(new HLSEvent(HLSEvent.ERROR, new HLSError(HLSError.FORBIDDEN, _last_segment_url, event.text)));
+            }
+            else if (event is SecurityErrorEvent) {
                 var txt : String = "Cannot load fragment: crossdomain access denied:" + event.text;
                 var hlsError : HLSError = new HLSError(HLSError.FRAGMENT_LOADING_CROSSDOMAIN_ERROR, _last_segment_url, txt);
                 _hls.dispatchEvent(new HLSEvent(HLSEvent.ERROR, hlsError));

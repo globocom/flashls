@@ -12,6 +12,7 @@ package org.mangui.hls {
         public static const KEY_LOADING_ERROR : int = 8;
         public static const KEY_PARSING_ERROR : int = 9;
         public static const TAG_APPENDING_ERROR : int = 10;
+        public static const FORBIDDEN: Number = 9;
 
         private var _code : int;
         private var _url : String;

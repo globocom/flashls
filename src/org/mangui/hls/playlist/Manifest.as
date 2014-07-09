@@ -53,7 +53,8 @@ package org.mangui.hls.playlist {
         private var _url : String;
 
         /** Load a playlist M3U8 file. **/
-        public function loadPlaylist(url : String, success : Function, error : Function, index : int, type : String, flushLiveURLcache : Boolean) : void {
+        public function loadPlaylist(url : String, success : Function, error : Function, httpStatus : Function,
+                                     index : int, type : String, flushLiveURLcache : Boolean) : void {
             _url = url;
             _success = success;
             _index = index;
@@ -61,6 +62,7 @@ package org.mangui.hls.playlist {
             _urlloader.addEventListener(Event.COMPLETE, _loaderHandler);
             _urlloader.addEventListener(IOErrorEvent.IO_ERROR, error);
             _urlloader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, error);
+            _urlloader.addEventListener(HTTPStatusEvent.HTTP_STATUS, httpStatus);
 
             if (flushLiveURLcache && type == HLSTypes.LIVE) {
                 /*

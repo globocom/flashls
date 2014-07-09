@@ -49,6 +49,7 @@ package org.mangui.hls.playlist {
             _urlloader.addEventListener(Event.COMPLETE, _loaderHandler);
             _urlloader.addEventListener(IOErrorEvent.IO_ERROR, _errorHandler);
             _urlloader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, _errorHandler);
+            _urlloader.addEventListener(HTTPStatusEvent.HTTP_STATUS, _manifestLoadHTTPStatusHandler);
         };
 
         public function dispose() : void {
@@ -58,6 +59,13 @@ package org.mangui.hls.playlist {
             _urlloader.removeEventListener(SecurityErrorEvent.SECURITY_ERROR, _errorHandler);
             _hls.removeEventListener(HLSEvent.PLAYBACK_STATE, _stateHandler);
             _hls.removeEventListener(HLSEvent.LEVEL_SWITCH, _levelSwitchHandler);
+        }
+
+        private function _manifestLoadHTTPStatusHandler(event:HTTPStatusEvent):void {
+            if (event.status === 403) {
+                var hlsError : HLSError = new HLSError(HLSError.FORBIDDEN, _url, "forbidden");
+                _hls.dispatchEvent(new HLSEvent(HLSEvent.ERROR, hlsError));
+            }
         }
 
         /** Loading failed; return errors. **/
@@ -123,6 +131,7 @@ package org.mangui.hls.playlist {
             _retry_timeout = 1000;
             _retry_count = 0;
             var loader : URLLoader = URLLoader(event.target);
+            loader.addEventListener(HTTPStatusEvent.HTTP_STATUS, _manifestLoadHTTPStatusHandler);
             _parseManifest(String(loader.data));
         };
 
@@ -213,7 +222,8 @@ package org.mangui.hls.playlist {
             // load active M3U8 playlist only
             _manifest_loading = new Manifest();
             _hls.dispatchEvent(new HLSEvent(HLSEvent.LEVEL_LOADING,_current_level));
-            _manifest_loading.loadPlaylist(_levels[_current_level].url, _parseLevelPlaylist, _errorHandler, _current_level, _type, HLSSettings.flushLiveURLCache);
+            _manifest_loading.loadPlaylist(_levels[_current_level].url, _parseLevelPlaylist, _errorHandler, _manifestLoadHTTPStatusHandler,
+                                           _current_level, _type, HLSSettings.flushLiveURLCache);
         };
 
         /** When level switch occurs, assess the need of (re)loading new level playlist **/

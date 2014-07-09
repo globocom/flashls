@@ -1,6 +1,8 @@
 package com.globo {
 
     import org.mangui.chromeless.ChromelessPlayer;
+    import org.mangui.hls.*;
+    import org.mangui.hls.utils.Log;
 
     import flash.display.*;
     import flash.events.*;
@@ -10,6 +12,7 @@ package com.globo {
     import flash.utils.setTimeout;
 
     public class Player extends ChromelessPlayer {
+        private var _url : String;
 
         public function Player() {
             stage.scaleMode = StageScaleMode.NO_SCALE;
@@ -27,7 +30,6 @@ package com.globo {
             ExternalInterface.addCallback("globoGetbufferLength", _getbufferLength);
             ExternalInterface.addCallback("globoGetAutoLevel", _getAutoLevel);
 
-            // Connect calls to JS.
             ExternalInterface.addCallback("globoPlayerLoad", _load);
             ExternalInterface.addCallback("globoPlayerPlay", _play);
             ExternalInterface.addCallback("globoPlayerPause", _pause);
@@ -40,6 +42,22 @@ package com.globo {
             ExternalInterface.addCallback("globoPlayerSetflushLiveURLCache", _setflushLiveURLCache);
 
             setTimeout(_pingJavascript, 50);
+        };
+
+        override protected function _load(url : String) : void {
+            _url = url;
+            super._load(url);
+        };
+
+        override protected function _errorHandler(event : HLSEvent) : void {
+            if (event.error.code !== HLSError.FORBIDDEN || event.error.code !== HLSError.MANIFEST_LOADING_CROSSDOMAIN_ERROR) {
+                CONFIG::LOGGING {
+                Log.info("Error: " + event.error.code + " : " + event.error.url + " : " + event.error.msg);
+                Log.info("Rebooting.");
+                }
+                _load(_url);
+                _play();
+            }
         };
    }
 }
