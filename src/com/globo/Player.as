@@ -49,6 +49,32 @@ package com.globo {
             setTimeout(_pingJavascript, 50);
         };
 
+        override protected function _onStageVideoState(event : StageVideoAvailabilityEvent) : void {
+            var available : Boolean = (event.availability == StageVideoAvailability.AVAILABLE);
+            _hls = new HLS();
+            _hls.stage = stage;
+            _hls.addEventListener(HLSEvent.ERROR, _errorHandler);
+            _hls.addEventListener(HLSEvent.MEDIA_TIME, _mediaTimeHandler);
+
+            if (available && stage.stageVideos.length > 0) {
+                _stageVideo = stage.stageVideos[0];
+                _stageVideo.viewPort = new Rectangle(0, 0, stage.stageWidth, stage.stageHeight);
+                _stageVideo.attachNetStream(_hls.stream);
+            } else {
+                _video = new Video(stage.stageWidth, stage.stageHeight);
+                addChild(_video);
+                _video.smoothing = true;
+                _video.attachNetStream(_hls.stream);
+            }
+            stage.removeEventListener(StageVideoAvailabilityEvent.STAGE_VIDEO_AVAILABILITY, _onStageVideoState);
+
+            var autoLoadUrl : String = root.loaderInfo.parameters.url as String;
+            if (autoLoadUrl != null) {
+                _autoLoad = true;
+                _load(autoLoadUrl);
+            }
+        };
+
         override protected function _load(url : String) : void {
             _url = url;
             super._load(url);
