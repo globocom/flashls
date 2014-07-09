@@ -30,6 +30,7 @@ package com.globo {
             ExternalInterface.addCallback("globoGetbufferLength", _getbufferLength);
             ExternalInterface.addCallback("globoGetAutoLevel", _getAutoLevel);
             ExternalInterface.addCallback("globoGetDroppedFrames", _getDroppedFrames);
+            ExternalInterface.addCallback("globoRemoveLevel", _removeLevel);
 
             ExternalInterface.addCallback("globoPlayerLoad", _load);
             ExternalInterface.addCallback("globoPlayerPlay", _play);
@@ -63,6 +64,10 @@ package com.globo {
 
         private function _getDroppedFrames() : int {
             return _hls.droppedFrames;
-        }
+        };
+
+        private function _removeLevel(pos:Number):void {
+            _hls.removeLevel(pos);
+        };
    }
 }

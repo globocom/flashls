@@ -83,6 +83,10 @@ package org.mangui.hls {
             _fragmentLoader.level = level;
         };
 
+        public function removeLevel(pos:Number):void {
+            _manifestLoader.removeLevel(pos);
+        };
+
         /* check if we are in autolevel mode */
         public function get autolevel() : Boolean {
             return _fragmentLoader.autolevel;

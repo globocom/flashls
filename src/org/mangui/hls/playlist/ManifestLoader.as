@@ -97,6 +97,12 @@ package org.mangui.hls.playlist {
             return _levels;
         };
 
+        /** dynamically remove levels **/
+        public function removeLevel(pos:Number):void {
+            _levels.splice(pos, 1);
+            _hls.dispatchEvent(new HLSEvent(HLSEvent.MANIFEST_LOADED, _levels));
+        };
+
         /** Return the stream type. **/
         public function get type() : String {
             return _type;
