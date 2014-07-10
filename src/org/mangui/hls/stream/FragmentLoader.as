@@ -139,8 +139,6 @@ package org.mangui.hls.stream {
         private var _retry_timeout : Number;
         private var _retry_count : int;
 
-        private var _retry_count_for_trying_to_load : Number = 0;
-        private var _retry_max_count_for_trying_to_load : Number = 20;
         private var _frag_load_status : int;
 
         /** Create the loader. **/
@@ -722,17 +720,8 @@ package org.mangui.hls.stream {
                     }
                     frag = _levels[_level].getFragmentfromSeqNum(new_seqnum);
                     if (frag == null) {
-                        CONFIG::LOGGING {
-                        Log.warn("error trying to load " + new_seqnum + " of [" + (_levels[_level].start_seqnum) + "," + (_levels[_level].end_seqnum) + "],level " + _level);
-                        }
-                        if (_retry_count_for_trying_to_load < _retry_max_count_for_trying_to_load) {
-                          _retry_count_for_trying_to_load ++;
-                        } else {
-                          _retry_count_for_trying_to_load = 0;
-                          var hlsError : HLSError = new HLSError(HLSError.FRAGMENT_LOADING_ERROR, _last_segment_url, "I/O Error: couldn't find media sequence");
-                          _hls.dispatchEvent(new HLSEvent(HLSEvent.ERROR, hlsError))
-                        }
-                        return 1;
+                        new_seqnum = _levels[_level].end_seqnum;
+                        frag = _levels[_level].getFragmentfromSeqNum(new_seqnum);
                     }
                     // update program date
                     _last_segment_program_date = frag.program_date;
