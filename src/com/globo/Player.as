@@ -10,7 +10,6 @@ package com.globo {
     import flash.external.ExternalInterface;
     import flash.geom.Rectangle;
     import flash.media.StageVideoAvailability;
-    -byerenchmark=true \
     import flash.utils.setTimeout;
 
     public class Player extends ChromelessPlayer {
