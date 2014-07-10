@@ -46,6 +46,7 @@ package com.globo {
             ExternalInterface.addCallback("globoPlayerSmoothSetLevel", _smoothSetLevel);
             ExternalInterface.addCallback("globoPlayerSetflushLiveURLCache", _setflushLiveURLCache);
             ExternalInterface.addCallback("globoPlayerSetStageScaleMode", _setScaleMode);
+            ExternalInterface.call("console.log", "HLS Initialized (0.0.5)");
 
             setTimeout(_pingJavascript, 50);
         };
