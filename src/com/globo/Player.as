@@ -10,6 +10,7 @@ package com.globo {
     import flash.external.ExternalInterface;
     import flash.geom.Rectangle;
     import flash.media.StageVideoAvailability;
+    -byerenchmark=true \
     import flash.utils.setTimeout;
 
     public class Player extends ChromelessPlayer {
@@ -46,7 +47,7 @@ package com.globo {
             ExternalInterface.addCallback("globoPlayerSmoothSetLevel", _smoothSetLevel);
             ExternalInterface.addCallback("globoPlayerSetflushLiveURLCache", _setflushLiveURLCache);
             ExternalInterface.addCallback("globoPlayerSetStageScaleMode", _setScaleMode);
-            ExternalInterface.call("console.log", "HLS Initialized (0.0.5)");
+            ExternalInterface.call("console.log", "HLS Initialized (0.0.6)");
 
             setTimeout(_pingJavascript, 50);
         };
