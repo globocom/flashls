@@ -13,7 +13,8 @@ package com.globo {
     import flash.utils.setTimeout;
 
     public class Player extends ChromelessPlayer {
-        private var _url : String;
+        private var _url:String;
+        private var playbackId:String;
 
         public function Player() {
             stage.scaleMode = StageScaleMode.NO_SCALE;
@@ -22,6 +23,8 @@ package com.globo {
             stage.fullScreenSourceRect = new Rectangle(0, 0, stage.stageWidth, stage.stageHeight);
             stage.addEventListener(StageVideoAvailabilityEvent.STAGE_VIDEO_AVAILABILITY, _onStageVideoState);
             stage.addEventListener(Event.RESIZE, _onStageResize);
+
+            this.playbackId = LoaderInfo(this.root.loaderInfo).parameters.playbackId;
 
             ExternalInterface.addCallback("globoGetDuration", _getDuration);
             ExternalInterface.addCallback("globoGetState", _getPlaybackState);
@@ -46,9 +49,17 @@ package com.globo {
             ExternalInterface.addCallback("globoPlayerSmoothSetLevel", _smoothSetLevel);
             ExternalInterface.addCallback("globoPlayerSetflushLiveURLCache", _setflushLiveURLCache);
             ExternalInterface.addCallback("globoPlayerSetStageScaleMode", _setScaleMode);
-            ExternalInterface.call("console.log", "HLS Initialized (0.0.6)");
+            ExternalInterface.call("console.log", "HLS Initialized (0.0.6 - id: " + this.playbackId + ")");
 
-            setTimeout(_pingJavascript, 50);
+            setTimeout(flashReady, 50);
+        };
+
+        private function _triggerEvent(name: String):void {
+            ExternalInterface.call('WP3.Mediator.trigger("' + playbackId + ':' + name +'")');
+        };
+
+        private function flashReady(): void {
+            _triggerEvent('flashready');
         };
 
         override protected function _onStageVideoState(event : StageVideoAvailabilityEvent) : void {
