@@ -15,6 +15,7 @@ package com.globo {
     public class Player extends ChromelessPlayer {
         private var _url:String;
         private var playbackId:String;
+        private var _timeHandlerCalled:Number = 0;
 
         public function Player() {
             stage.scaleMode = StageScaleMode.NO_SCALE;
@@ -54,8 +55,9 @@ package com.globo {
             setTimeout(flashReady, 50);
         };
 
-        private function _triggerEvent(name: String):void {
-            ExternalInterface.call('WP3.Mediator.trigger("' + playbackId + ':' + name +'")');
+        private function _triggerEvent(eventName: String, params:Object=null):void {
+            var event:String = playbackId + ":" + eventName;
+            ExternalInterface.call('WP3.Mediator.trigger', event, params);
         };
 
         private function flashReady(): void {
@@ -91,6 +93,7 @@ package com.globo {
         override protected function _mediaTimeHandler(event : HLSEvent) : void {
             _duration = event.mediatime.duration;
             _media_position = event.mediatime.position;
+            _timeHandlerCalled += 1;
 
             var videoWidth : int = _video ? _video.videoWidth : _stageVideo.videoWidth;
             var videoHeight : int = _video ? _video.videoHeight : _stageVideo.videoHeight;
@@ -102,6 +105,11 @@ package com.globo {
                     _videoWidth = videoWidth;
                     _resize();
                 }
+            }
+
+            if (_timeHandlerCalled == 10) {
+                _triggerEvent('timeupdate', {duration: _duration, position: _hls.position});
+                _timeHandlerCalled = 0;
             }
         };
 
