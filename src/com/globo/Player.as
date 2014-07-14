@@ -50,7 +50,7 @@ package com.globo {
             ExternalInterface.addCallback("globoPlayerSmoothSetLevel", _smoothSetLevel);
             ExternalInterface.addCallback("globoPlayerSetflushLiveURLCache", _setflushLiveURLCache);
             ExternalInterface.addCallback("globoPlayerSetStageScaleMode", _setScaleMode);
-            ExternalInterface.call("console.log", "HLS Initialized (0.0.66 - id: " + this.playbackId + ")");
+            ExternalInterface.call("console.log", "HLS Initialized (0.0.7 - id: " + this.playbackId + ")");
 
             setTimeout(flashReady, 50);
         };
@@ -109,6 +109,11 @@ package com.globo {
                     _videoHeight = videoHeight;
                     _videoWidth = videoWidth;
                     _resize();
+                    if (videoHeight >= 720) {
+                        _triggerEvent('highdefinition', {isHD: true});
+                    } else {
+                        _triggerEvent('highdefinition', {isHD: false});
+                    }
                 }
             }
 

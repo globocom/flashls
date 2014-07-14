@@ -720,6 +720,10 @@ package org.mangui.hls.stream {
                     }
                     frag = _levels[_level].getFragmentfromSeqNum(new_seqnum);
                     if (frag == null) {
+                        CONFIG::LOGGING {
+                        Log.debug("couldn't find correct media sequence");
+                        }
+
                         new_seqnum = _levels[_level].end_seqnum;
                         frag = _levels[_level].getFragmentfromSeqNum(new_seqnum);
                     }
