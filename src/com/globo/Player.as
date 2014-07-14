@@ -50,7 +50,7 @@ package com.globo {
             ExternalInterface.addCallback("globoPlayerSmoothSetLevel", _smoothSetLevel);
             ExternalInterface.addCallback("globoPlayerSetflushLiveURLCache", _setflushLiveURLCache);
             ExternalInterface.addCallback("globoPlayerSetStageScaleMode", _setScaleMode);
-            ExternalInterface.call("console.log", "HLS Initialized (0.0.6 - id: " + this.playbackId + ")");
+            ExternalInterface.call("console.log", "HLS Initialized (0.0.66 - id: " + this.playbackId + ")");
 
             setTimeout(flashReady, 50);
         };
@@ -70,6 +70,7 @@ package com.globo {
             _hls.stage = stage;
             _hls.addEventListener(HLSEvent.ERROR, _errorHandler);
             _hls.addEventListener(HLSEvent.MEDIA_TIME, _mediaTimeHandler);
+            _hls.addEventListener(HLSEvent.PLAYBACK_STATE, _stateHandler);
 
             if (available && stage.stageVideos.length > 0) {
                 _stageVideo = stage.stageVideos[0];
@@ -88,6 +89,10 @@ package com.globo {
                 _autoLoad = true;
                 _load(autoLoadUrl);
             }
+        };
+
+        override protected function _stateHandler(event : HLSEvent) : void {
+            _triggerEvent('playbackstate', {state: event.state});
         };
 
         override protected function _mediaTimeHandler(event : HLSEvent) : void {
