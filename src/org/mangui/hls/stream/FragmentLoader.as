@@ -1,5 +1,4 @@
 package org.mangui.hls.stream {
-    import com.hurlant.util.Hex;
     
     import flash.events.*;
     import flash.net.*;
@@ -18,6 +17,7 @@ package org.mangui.hls.stream {
 
     CONFIG::LOGGING {
     import org.mangui.hls.utils.Log;
+    import org.mangui.hls.utils.Hex;
     }
 
     /** Class that fetches fragments. **/
@@ -417,13 +417,7 @@ package org.mangui.hls.stream {
             CONFIG::LOGGING {
             Log.debug("probe fragment type");
             }
-            if (TSDemuxer.probe(data) == true) {
-                CONFIG::LOGGING {
-                Log.debug("MPEG2-TS found");
-                }
-                _video_tags_expected = true;
-                return new TSDemuxer(_fragParsingAudioSelectionHandler, _fragParsingProgressHandler, _fragParsingCompleteHandler, _switchlevel || _hasDiscontinuity);
-            } else if (AACDemuxer.probe(data) == true) {
+            if (AACDemuxer.probe(data) == true) {
                 CONFIG::LOGGING {
                 Log.debug("AAC ES found");
                 }
@@ -435,6 +429,12 @@ package org.mangui.hls.stream {
                 }
                 _video_tags_expected = false;
                 return new MP3Demuxer(_fragParsingAudioSelectionHandler, _fragParsingProgressHandler, _fragParsingCompleteHandler);
+            } else if (TSDemuxer.probe(data) == true) {
+                CONFIG::LOGGING {
+                Log.debug("MPEG2-TS found");
+                }
+                _video_tags_expected = true;
+                return new TSDemuxer(_fragParsingAudioSelectionHandler, _fragParsingProgressHandler, _fragParsingCompleteHandler);
             } else {
                 CONFIG::LOGGING {
                 Log.debug("probe fails");
@@ -709,6 +709,10 @@ package org.mangui.hls.stream {
                         _hls.dispatchEvent(new HLSEvent(HLSEvent.LAST_VOD_FRAGMENT_LOADED));
                         // stop loading timer as well, as no other fragments can be loaded
                         _timer.stop();
+                        // flush demux
+                        if (_demux) {
+                            _demux.flush();
+                        }
                     }
                     return 1;
                 } else {
@@ -731,6 +735,12 @@ package org.mangui.hls.stream {
                     _last_segment_program_date = frag.program_date;
                     // check whether there is a discontinuity between last segment and new segment
                     _hasDiscontinuity = (frag.continuity != _last_segment_continuity_counter);
+                    if (_hasDiscontinuity || _switchlevel) {
+                        // flush demux
+                        if (_demux) {
+                            _demux.flush();
+                        }
+                    }
                     // update discontinuity counter
                     _last_segment_continuity_counter = frag.continuity;
                     log_prefix = "Loading       ";
@@ -761,7 +771,9 @@ package org.mangui.hls.stream {
                 _keystreamloader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, _keyLoadErrorHandler);
                 _keystreamloader.addEventListener(Event.COMPLETE, _keyLoadCompleteHandler);
             }
-            _demux = null;
+            if (_hasDiscontinuity || _switchlevel) {
+                _demux = null;
+            }
             _last_segment_url = frag.url;
             _last_segment_decrypt_key_url = frag.decrypt_url;
             _current_segment_start_time = frag.start_time;
