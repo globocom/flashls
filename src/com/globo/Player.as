@@ -5,6 +5,7 @@ package com.globo {
     import org.mangui.hls.utils.Log;
 
     import flash.display.*;
+    import flash.system.Security;
     import flash.media.Video;
     import flash.events.*;
     import flash.external.ExternalInterface;
@@ -18,15 +19,15 @@ package com.globo {
         private var _timeHandlerCalled:Number = 0;
 
         public function Player() {
-            stage.scaleMode = StageScaleMode.NO_SCALE;
-            stage.align = StageAlign.TOP_LEFT;
-            stage.frameRate = 30;
-            stage.fullScreenSourceRect = new Rectangle(0, 0, stage.stageWidth, stage.stageHeight);
-            stage.addEventListener(StageVideoAvailabilityEvent.STAGE_VIDEO_AVAILABILITY, _onStageVideoState);
-            stage.addEventListener(Event.RESIZE, _onStageResize);
-
+            super();
+            Security.allowDomain("*");
+            Security.allowInsecureDomain("*");
             this.playbackId = LoaderInfo(this.root.loaderInfo).parameters.playbackId;
+            ExternalInterface.call("console.log", "HLS Initialized (0.0.10 - id: " + this.playbackId + ")");
+            setTimeout(flashReady, 50);
+        }
 
+        override protected function _setupExternalGetters():void {
             ExternalInterface.addCallback("globoGetDuration", _getDuration);
             ExternalInterface.addCallback("globoGetState", _getPlaybackState);
             ExternalInterface.addCallback("globoGetPosition", _getPosition);
@@ -38,7 +39,10 @@ package com.globo {
             ExternalInterface.addCallback("globoGetLastProgramDate", _getLastProgramDate);
             ExternalInterface.addCallback("globoGetDroppedFrames", _getDroppedFrames);
             ExternalInterface.addCallback("globoRemoveLevel", _removeLevel);
+            ExternalInterface.call("console.log", "setup external getters");
+        }
 
+        override protected function _setupExternalCallers():void {
             ExternalInterface.addCallback("globoPlayerLoad", _load);
             ExternalInterface.addCallback("globoPlayerPlay", _play);
             ExternalInterface.addCallback("globoPlayerPause", _pause);
@@ -50,17 +54,16 @@ package com.globo {
             ExternalInterface.addCallback("globoPlayerSmoothSetLevel", _smoothSetLevel);
             ExternalInterface.addCallback("globoPlayerSetflushLiveURLCache", _setflushLiveURLCache);
             ExternalInterface.addCallback("globoPlayerSetStageScaleMode", _setScaleMode);
-            ExternalInterface.call("console.log", "HLS Initialized (0.0.7 - id: " + this.playbackId + ")");
-
-            setTimeout(flashReady, 50);
+            ExternalInterface.call("console.log", "setup external callers");
         };
 
-        private function _triggerEvent(eventName: String, params:Object=null):void {
+        private function _triggerEvent(eventName: String, param:String=null):void {
             var event:String = playbackId + ":" + eventName;
-            ExternalInterface.call('WP3.Mediator.trigger', event, params);
+            ExternalInterface.call("console.log", "Dispatching " + eventName + ")");
+            ExternalInterface.call('WP3.Mediator.trigger', event, param);
         };
 
-        private function flashReady(): void {
+        protected function flashReady(): void {
             _triggerEvent('flashready');
         };
 
@@ -92,7 +95,7 @@ package com.globo {
         };
 
         override protected function _stateHandler(event : HLSEvent) : void {
-            _triggerEvent('playbackstate', {state: event.state});
+            _triggerEvent('playbackstate', event.state);
         };
 
         override protected function _mediaTimeHandler(event : HLSEvent) : void {
@@ -110,15 +113,15 @@ package com.globo {
                     _videoWidth = videoWidth;
                     _resize();
                     if (videoHeight >= 720) {
-                        _triggerEvent('highdefinition', {isHD: true});
+                        _triggerEvent('highdefinition', "true");
                     } else {
-                        _triggerEvent('highdefinition', {isHD: false});
+                        _triggerEvent('highdefinition', "false");
                     }
                 }
             }
 
             if (_timeHandlerCalled == 10) {
-                _triggerEvent('timeupdate', {duration: _duration, position: _hls.position});
+                _triggerEvent('timeupdate', _duration + "," + _hls.position);
                 _timeHandlerCalled = 0;
             }
         };
