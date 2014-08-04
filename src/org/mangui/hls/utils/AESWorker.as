@@ -70,7 +70,6 @@ package org.mangui.hls.utils {
 
 		private function onData() : void {
 			var data:ByteArray = Worker.current.getSharedProperty('data');
-			workerToMain.send("recebido dados " + data.length);
             _data.position = _write_position;
             _data.writeBytes(data);
             _write_position += data.length;
@@ -103,7 +102,6 @@ package org.mangui.hls.utils {
 
         private function _complete():void {
 			Worker.current.setSharedProperty('decryptedData', decryptedData);
-            workerToMain.send('sending ' + decryptedData.length);
             workerToMain.send('progress');
             workerToMain.send('complete');
         }
@@ -148,7 +146,6 @@ package org.mangui.hls.utils {
         }
 
         public function unpad(a : ByteArray) : void {
-            workerToMain.send("unpading " + a.length);
             var c : uint = a.length % 16;
             if (c != 0) {
 				workerToMain.send("PKCS#5::unpad: ByteArray.length isn't a multiple of the blockSize");

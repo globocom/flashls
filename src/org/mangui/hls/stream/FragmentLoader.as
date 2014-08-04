@@ -173,7 +173,6 @@ package org.mangui.hls.stream {
         };
 
         private function createWorker():void {
-			ExternalInterface.call('console.log', 'Worker is supported.');
             var workerBytes:ByteArray = new WORKER_SWF() as ByteArray;
             worker = WorkerDomain.current.createWorker(workerBytes);
 
@@ -189,10 +188,8 @@ package org.mangui.hls.stream {
 
         protected function onWorkerToMain(event:Event):void {
           var message:String = workerToMain.receive();
-          ExternalInterface.call("console.log", "[WORKER] " + message);
           var decryptedData:ByteArray = worker.getSharedProperty('decryptedData');
           if (message == 'progress') {
-            ExternalInterface.call("console.log", "received " + decryptedData.length);
             _fragDecryptProgressHandler(decryptedData);
           } else if (message == 'complete') {
             decryptedData.length = 0;
@@ -450,7 +447,6 @@ package org.mangui.hls.stream {
             _cancel_load = false;
             if (needDecrypt) {
 				if (Worker.isSupported && worker.state == WorkerState.RUNNING) {
-					ExternalInterface.call("console.log", "mandando dados " + encryptedData.length);
 					worker.setSharedProperty('data', encryptedData);
 					sendToWorker('append');
 					sendToWorker('notifyComplete');
