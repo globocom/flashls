@@ -85,7 +85,6 @@ package org.mangui.hls.utils {
 			_write_position += data.length;
         }
 
-        /** decrypt a small chunk of packets each time to avoid blocking **/
         private function _decryptData() : void {
 			_data.position = _read_position;
 			var decryptdata : ByteArray;
@@ -94,9 +93,7 @@ package org.mangui.hls.utils {
 					if (_data_complete) {
 						_read_position += _data.bytesAvailable;
 						decryptdata = _decryptCBC(_data, _data.bytesAvailable - (_data.bytesAvailable % 16));
-						workerToMain.send("before unpad " + decryptdata.length);
 						unpad(decryptdata);
-						workerToMain.send("after unpad " + decryptdata.length);
 					} else {
 						workerToMain.send("turning decrypting false");
 						decrypting = false;
@@ -117,7 +114,7 @@ package org.mangui.hls.utils {
 
         private function _complete():void {
 			Worker.current.setSharedProperty('decryptedData', decryptedData);
-            workerToMain.send('mandando ' + decryptedData.length);
+            workerToMain.send('sending ' + decryptedData.length);
             workerToMain.send('progress');
             workerToMain.send('complete');
         }
@@ -132,13 +129,11 @@ package org.mangui.hls.utils {
         }
 
         private function _decryptCBC(crypt : ByteArray, len : uint) : ByteArray {
-            workerToMain.send("_decryptCBC: " + crypt.length + "," + len);
             var src : Vector.<uint> = new Vector.<uint>(4);
             var dst : Vector.<uint> = new Vector.<uint>(4);
             var decrypt : ByteArray = new ByteArray();
             decrypt.length = len;
             for (var i : uint = 0; i < len / 16; i++) {
-                try {
               // read src byte array
                 src[0] = crypt.readUnsignedInt();
                 src[1] = crypt.readUnsignedInt();
@@ -159,9 +154,6 @@ package org.mangui.hls.utils {
                 iv1 = src[1];
                 iv2 = src[2];
                 iv3 = src[3];
-                } catch (error:Error) {
-                    workerToMain.send("broke here decryptCBC");
-                }
             }
             decrypt.position = 0;
             return decrypt;
@@ -170,18 +162,22 @@ package org.mangui.hls.utils {
         public function unpad(a : ByteArray) : void {
             workerToMain.send("unpading " + a.length);
             var c : uint = a.length % 16;
-            if (c != 0) throw new Error("PKCS#5::unpad: ByteArray.length isn't a multiple of the blockSize");
+            if (c != 0) {
+				workerToMain.send("PKCS#5::unpad: ByteArray.length isn't a multiple of the blockSize");
+				throw new Error("PKCS#5::unpad: ByteArray.length isn't a multiple of the blockSize");
+			}
             c = a[a.length - 1];
             for (var i : uint = c; i > 0; i--) {
                 try {
-                var v : uint = a[a.length - 1];
-                a.length--;
-                if (c != v) throw new Error("PKCS#5:unpad: Invalid padding value. expected [" + c + "], found [" + v + "]");
+					var v : uint = a[a.length - 1];
+					a.length--;
+					if (c != v) {
+						workerToMain.send("PKCS#5:unpad: Invalid padding value. expected [" + c + "], found [" + v + "]");
+						throw new Error("PKCS#5:unpad: Invalid padding value. expected [" + c + "], found [" + v + "]");
+					}
                 } catch(error:Error) {
-                workerToMain.send("broke unpading: " + a.length);
                 }
             }
-            workerToMain.send("finished unpad");
         }
 
         public function destroy() : void {

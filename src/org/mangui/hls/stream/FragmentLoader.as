@@ -190,11 +190,10 @@ package org.mangui.hls.stream {
           ExternalInterface.call("console.log", "[WORKER] " + message);
           var decryptedData:ByteArray = worker.getSharedProperty('decryptedData');
           if (message == 'progress') {
-            ExternalInterface.call("console.log", "chegou chunks " + decryptedData.length);
+            ExternalInterface.call("console.log", "received " + decryptedData.length);
             _fragDecryptProgressHandler(decryptedData);
           } else if (message == 'complete') {
             decryptedData.length = 0;
-            ExternalInterface.call("console.log", "fim");
             _fragDecryptCompleteHandler();
           }
         }
