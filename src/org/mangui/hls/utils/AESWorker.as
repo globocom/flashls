@@ -28,7 +28,6 @@ package org.mangui.hls.utils {
         private var _read_position : uint;
         private var _write_position : uint;
 		private var decrypting:Boolean = false;
-        private var _data_complete : Boolean;
 		private var decryptedData:ByteArray;
 
         public function AESWorker() {
@@ -39,7 +38,6 @@ package org.mangui.hls.utils {
 
         protected function onMainToWorker(event:Event):void {
             var msg:String = mainToWorker.receive();
-            workerToMain.send(msg);
             if (msg == 'startDecrypt') {
                 startDecrypt();
             } else if (msg == 'notifyComplete') {
@@ -50,7 +48,6 @@ package org.mangui.hls.utils {
 				_read_position = 0;
 				_write_position = 0;
 				_data = new ByteArray();
-				_data_complete = false;
 			}
         }
 
@@ -66,14 +63,14 @@ package org.mangui.hls.utils {
 
 			_read_position = 0;
 			_write_position = 0;
-            _data = new ByteArray();
-			_data_complete = false;
 			decrypting = true;
+            _data = new ByteArray();
 			decryptedData = new ByteArray();
         }
 
 		private function onData() : void {
 			var data:ByteArray = Worker.current.getSharedProperty('data');
+			workerToMain.send("recebido dados " + data.length);
             _data.position = _write_position;
             _data.writeBytes(data);
             _write_position += data.length;
@@ -90,15 +87,9 @@ package org.mangui.hls.utils {
 			var decryptdata : ByteArray;
 			if (_data.bytesAvailable) {
 				if (_data.bytesAvailable <= CHUNK_SIZE) {
-					if (_data_complete) {
-						_read_position += _data.bytesAvailable;
-						decryptdata = _decryptCBC(_data, _data.bytesAvailable - (_data.bytesAvailable % 16));
-						unpad(decryptdata);
-					} else {
-						workerToMain.send("turning decrypting false");
-						decrypting = false;
-						return;
-					}
+					_read_position += _data.bytesAvailable;
+					decryptdata = _decryptCBC(_data, _data.bytesAvailable - (_data.bytesAvailable % 16));
+					unpad(decryptdata);
 				} else {
 					_read_position += CHUNK_SIZE;
 					decryptdata = _decryptCBC(_data, CHUNK_SIZE);
@@ -106,9 +97,7 @@ package org.mangui.hls.utils {
 				_progress(decryptdata);
 			} else {
 				decrypting = false;
-				if (_data_complete) {
-					_complete();
-				}
+				_complete();
 			}
         }
 
@@ -120,7 +109,6 @@ package org.mangui.hls.utils {
         }
 
         public function notifyComplete() : void {
-			_data_complete = true;
 			decrypting = true;
 			_write_position = 0;
 			do {

@@ -155,6 +155,8 @@ package org.mangui.hls.stream {
         protected var worker:Worker;
         protected var mainToWorker:MessageChannel;
         protected var workerToMain:MessageChannel;
+		protected var encryptedData:ByteArray;
+		protected var _write_position:Number;
 
         /** Create the loader. **/
         public function FragmentLoader(hls : HLS) : void {
@@ -390,6 +392,8 @@ package org.mangui.hls.stream {
                         worker.setSharedProperty('key', _keymap[_last_segment_decrypt_key_url]);
                         worker.setSharedProperty('iv', _last_segment_decrypt_iv);
                         sendToWorker('startDecrypt');
+						encryptedData = new ByteArray();
+						_write_position = 0;
 					} else {
                     	_decryptAES = new AES(_keymap[_last_segment_decrypt_key_url], _last_segment_decrypt_iv, 
 											_fragDecryptProgressHandler, _fragDecryptCompleteHandler);
@@ -401,8 +405,6 @@ package org.mangui.hls.stream {
             }
             if (event.bytesLoaded > _fragWritePosition) {
                 var data : ByteArray = new ByteArray();
-				data.shareable = true;
-				worker.setSharedProperty('data', data);
 
                 _fragstreamloader.readBytes(data);
                 _fragWritePosition += data.length;
@@ -411,7 +413,10 @@ package org.mangui.hls.stream {
                 // }
                 if (needDecrypt) {
 					if (Worker.isSupported && worker.state == WorkerState.RUNNING) {
-						sendToWorker('append');
+						encryptedData.position = _write_position;
+						encryptedData.writeBytes(data);
+						_write_position += data.length;
+
 					} else {
 						_decryptAES.append(data);
 					}
@@ -445,6 +450,9 @@ package org.mangui.hls.stream {
             _cancel_load = false;
             if (needDecrypt) {
 				if (Worker.isSupported && worker.state == WorkerState.RUNNING) {
+					ExternalInterface.call("console.log", "mandando dados " + encryptedData.length);
+					worker.setSharedProperty('data', encryptedData);
+					sendToWorker('append');
 					sendToWorker('notifyComplete');
 				} else {
 					_decryptAES.notifycomplete();
