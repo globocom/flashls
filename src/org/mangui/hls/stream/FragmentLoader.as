@@ -13,7 +13,7 @@ package org.mangui.hls.stream {
     
     import org.mangui.hls.*;
     import org.mangui.hls.demux.*;
-	import org.mangui.hls.flv.*;
+    import org.mangui.hls.flv.*;
     import org.mangui.hls.playlist.*;
     import org.mangui.hls.stream.*;
     import org.mangui.hls.model.Fragment;
@@ -155,8 +155,8 @@ package org.mangui.hls.stream {
         protected var worker:Worker;
         protected var mainToWorker:MessageChannel;
         protected var workerToMain:MessageChannel;
-		protected var encryptedData:ByteArray;
-		protected var _write_position:Number;
+	protected var encryptedData:ByteArray;
+	protected var _write_position:Number;
 
         /** Create the loader. **/
         public function FragmentLoader(hls : HLS) : void {
@@ -173,32 +173,32 @@ package org.mangui.hls.stream {
         };
 
         private function createWorker():void {
-            var workerBytes:ByteArray = new WORKER_SWF() as ByteArray;
-            worker = WorkerDomain.current.createWorker(workerBytes);
+	    var workerBytes:ByteArray = new WORKER_SWF() as ByteArray;
+	    worker = WorkerDomain.current.createWorker(workerBytes);
 
-            mainToWorker = Worker.current.createMessageChannel(worker);
-            workerToMain = worker.createMessageChannel(Worker.current);
+	    mainToWorker = Worker.current.createMessageChannel(worker);
+	    workerToMain = worker.createMessageChannel(Worker.current);
 
-            worker.setSharedProperty("mainToWorker", mainToWorker);
-            worker.setSharedProperty("workerToMain", workerToMain);
+	    worker.setSharedProperty("mainToWorker", mainToWorker);
+	    worker.setSharedProperty("workerToMain", workerToMain);
 
-            workerToMain.addEventListener(Event.CHANNEL_MESSAGE, onWorkerToMain);
-            worker.start();
+	    workerToMain.addEventListener(Event.CHANNEL_MESSAGE, onWorkerToMain);
+	    worker.start();
         }
 
         protected function onWorkerToMain(event:Event):void {
-          var message:String = workerToMain.receive();
-          var decryptedData:ByteArray = worker.getSharedProperty('decryptedData');
-          if (message == 'progress') {
-            _fragDecryptProgressHandler(decryptedData);
-          } else if (message == 'complete') {
-            decryptedData.length = 0;
-            _fragDecryptCompleteHandler();
-          }
-        }
+	    var message:String = workerToMain.receive();
+	    var decryptedData:ByteArray = worker.getSharedProperty('decryptedData');
+	    if (message == 'progress') {
+	        _fragDecryptProgressHandler(decryptedData);
+	    } else if (message == 'complete') {
+		decryptedData.length = 0;
+		_fragDecryptCompleteHandler();
+	    }
+	}
 
         private function sendToWorker(message:String):void {
-            mainToWorker.send(message);
+	    mainToWorker.send(message);
         }
 
         public function dispose() : void {
@@ -380,23 +380,23 @@ package org.mangui.hls.stream {
                 }
                 // decrypt data if needed
                 if (_last_segment_decrypt_key_url != null) {
-					needDecrypt = true;
+		    needDecrypt = true;
                     _frag_decrypt_start_time = new Date().valueOf();
                     CONFIG::LOGGING {
                     Log.debug("init AES context");
                     }
-					if (Worker.isSupported && worker.state == WorkerState.RUNNING) {
-                        worker.setSharedProperty('key', _keymap[_last_segment_decrypt_key_url]);
-                        worker.setSharedProperty('iv', _last_segment_decrypt_iv);
-                        sendToWorker('startDecrypt');
-						encryptedData = new ByteArray();
-						_write_position = 0;
-					} else {
-                    	_decryptAES = new AES(_keymap[_last_segment_decrypt_key_url], _last_segment_decrypt_iv, 
-											_fragDecryptProgressHandler, _fragDecryptCompleteHandler);
-					}
+		    if (Worker.isSupported && worker.state == WorkerState.RUNNING) {
+			worker.setSharedProperty('key', _keymap[_last_segment_decrypt_key_url]);
+			worker.setSharedProperty('iv', _last_segment_decrypt_iv);
+			sendToWorker('startDecrypt');
+			encryptedData = new ByteArray();
+			_write_position = 0;
+		    } else {
+			_decryptAES = new AES(_keymap[_last_segment_decrypt_key_url], _last_segment_decrypt_iv, 
+							    _fragDecryptProgressHandler, _fragDecryptCompleteHandler);
+		    }
                 } else {
-					needDecrypt = false;
+		    needDecrypt = false;
                     _decryptAES = null;
                 }
             }
@@ -409,14 +409,13 @@ package org.mangui.hls.stream {
                 // Log.debug2("bytesLoaded/bytesTotal:" + event.bytesLoaded + "/" + event.bytesTotal);
                 // }
                 if (needDecrypt) {
-					if (Worker.isSupported && worker.state == WorkerState.RUNNING) {
-						encryptedData.position = _write_position;
-						encryptedData.writeBytes(data);
-						_write_position += data.length;
-
-					} else {
-						_decryptAES.append(data);
-					}
+		    if (Worker.isSupported && worker.state == WorkerState.RUNNING) {
+			encryptedData.position = _write_position;
+			encryptedData.writeBytes(data);
+			_write_position += data.length;
+		    } else {
+			_decryptAES.append(data);
+		    }
                 } else {
                     _fragDecryptProgressHandler(data);
                 }
@@ -446,13 +445,13 @@ package org.mangui.hls.stream {
             }
             _cancel_load = false;
             if (needDecrypt) {
-				if (Worker.isSupported && worker.state == WorkerState.RUNNING) {
-					worker.setSharedProperty('data', encryptedData);
-					sendToWorker('append');
-					sendToWorker('notifyComplete');
-				} else {
-					_decryptAES.notifycomplete();
-				}
+		if (Worker.isSupported && worker.state == WorkerState.RUNNING) {
+		    worker.setSharedProperty('data', encryptedData);
+		    sendToWorker('append');
+		    sendToWorker('notifyComplete');
+		} else {
+		    _decryptAES.notifycomplete();
+		}
             } else {
                 _fragDecryptCompleteHandler();
             }
