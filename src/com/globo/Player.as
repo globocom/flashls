@@ -59,7 +59,6 @@ package com.globo {
 
         private function _triggerEvent(eventName: String, param:String=null):void {
             var event:String = playbackId + ":" + eventName;
-            ExternalInterface.call("console.log", "Dispatching " + eventName + ")");
             ExternalInterface.call('WP3.Mediator.trigger', event, param);
         };
 
