@@ -58,7 +58,7 @@ package com.globo {
 
         private function _triggerEvent(eventName: String, param:String=null):void {
             var event:String = playbackId + ":" + eventName;
-            ExternalInterface.call('WP3.Mediator.trigger', event, param);
+            ExternalInterface.call('Clappr.Mediator.trigger', event, param);
         };
 
         protected function flashReady(): void {
@@ -132,9 +132,11 @@ package com.globo {
         override protected function _errorHandler(event : HLSEvent) : void {
 	    if (event.error.code == HLSError.FORBIDDEN) {
 		CONFIG::LOGGING { Log.info("Error, FORBIDDEN.") }
+		 _triggerEvent('playbackerror');
 		_stop();
 	    } else if (event.error.code == HLSError.MANIFEST_LOADING_CROSSDOMAIN_ERROR) {
 		CONFIG::LOGGING { Log.info("Error, CROSS DOMAIN.") }
+	        _triggerEvent('playbackerror');
 		_stop();
 	    } else {
 		if (_totalErrors < 4) {
@@ -144,6 +146,7 @@ package com.globo {
 		    _play();
 		} else {
 		    CONFIG::LOGGING { Log.info("Error, aborting.") }
+	            _triggerEvent('playbackerror');
 		    _stop();
 		}
 	    }
