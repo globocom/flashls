@@ -17,6 +17,7 @@ package com.globo {
         private var _url:String;
         private var playbackId:String;
         private var _timeHandlerCalled:Number = 0;
+	private var _totalErrors:Number = 0;
 
         public function Player() {
             super();
@@ -129,14 +130,23 @@ package com.globo {
         };
 
         override protected function _errorHandler(event : HLSEvent) : void {
-            if (event.error.code !== HLSError.FORBIDDEN || event.error.code !== HLSError.MANIFEST_LOADING_CROSSDOMAIN_ERROR) {
-                CONFIG::LOGGING {
-                Log.info("Error: " + event.error.code + " : " + event.error.url + " : " + event.error.msg);
-                Log.info("Rebooting.");
-                }
-                _load(_url);
-                _play();
-            }
+	    if (event.error.code == HLSError.FORBIDDEN) {
+		CONFIG::LOGGING { Log.info("Error, FORBIDDEN.") }
+		_stop();
+	    } else if (event.error.code == HLSError.MANIFEST_LOADING_CROSSDOMAIN_ERROR) {
+		CONFIG::LOGGING { Log.info("Error, CROSS DOMAIN.") }
+		_stop();
+	    } else {
+		if (_totalErrors < 4) {
+		    CONFIG::LOGGING { Log.info("Unknown error, rebooting.") }
+		    _totalErrors++;
+		    _load(_url);
+		    _play();
+		} else {
+		    CONFIG::LOGGING { Log.info("Error, aborting.") }
+		    _stop();
+		}
+	    }
         };
 
         private function _getDroppedFrames() : int {
