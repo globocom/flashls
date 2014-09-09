@@ -1,8 +1,8 @@
 package org.mangui.hls.model {
-CONFIG::LOGGING {  
-	import org.mangui.hls.utils.Log;
-}
-	import org.mangui.hls.utils.PTS;
+    CONFIG::LOGGING {
+        import org.mangui.hls.utils.Log;
+    }
+    import org.mangui.hls.utils.PTS;
 
     /** HLS streaming quality level. **/
     public class Level {
@@ -40,19 +40,19 @@ CONFIG::LOGGING {
             this.fragments = new Vector.<Fragment>();
         };
 
-        /** Return the sequence number before a given time position. **/
-        public function getSeqNumBeforePosition(position : Number) : int {
-            if (fragments[0].valid && position < fragments[0].start_time)
-                return start_seqnum;
+        /** Return the Fragment before a given time position. **/
+        public function getFragmentBeforePosition(position : Number) : Fragment {
+            if (fragments[0].data.valid && position < fragments[0].start_time)
+                return fragments[0];
 
-            var len:int = fragments.length;
+            var len : int = fragments.length;
             for (var i : int = 0; i < len; i++) {
                 /* check whether fragment contains current position */
-                if (fragments[i].valid && fragments[i].start_time <= position && fragments[i].start_time + fragments[i].duration > position) {
-                    return (start_seqnum + i);
+                if (fragments[i].data.valid && fragments[i].start_time <= position && fragments[i].start_time + fragments[i].duration > position) {
+                    return fragments[i];
                 }
             }
-            return end_seqnum;
+            return fragments[len - 1];
         };
 
         /** Return the sequence number from a given program date **/
@@ -60,10 +60,10 @@ CONFIG::LOGGING {
             if (program_date < fragments[0].program_date)
                 return -1;
 
-            var len:int = fragments.length;
+            var len : int = fragments.length;
             for (var i : int = 0; i < len; i++) {
                 /* check whether fragment contains current position */
-                if (fragments[i].valid && fragments[i].program_date <= program_date && fragments[i].program_date + 1000 * fragments[i].duration > program_date) {
+                if (fragments[i].data.valid && fragments[i].program_date <= program_date && fragments[i].program_date + 1000 * fragments[i].duration > program_date) {
                     return (start_seqnum + i);
                 }
             }
@@ -75,14 +75,14 @@ CONFIG::LOGGING {
             if (fragments.length == 0)
                 return -1;
             var firstIndex : Number = getFirstIndexfromContinuity(continuity);
-            if (firstIndex == -1 || fragments[firstIndex].start_pts_computed == Number.NEGATIVE_INFINITY)
+            if (firstIndex == -1 || isNaN(fragments[firstIndex].data.pts_start_computed))
                 return -1;
             var lastIndex : Number = getLastIndexfromContinuity(continuity);
 
             for (var i : int = firstIndex; i <= lastIndex; i++) {
                 var frag : Fragment = fragments[i];
                 /* check nearest fragment */
-                if ( frag.valid && (frag.duration >= 0) && (Math.abs(frag.start_pts_computed - pts) < Math.abs(frag.start_pts_computed + 1000 * frag.duration - pts))) {
+                if ( frag.data.valid && (frag.duration >= 0) && (Math.abs(frag.data.pts_start_computed - pts) < Math.abs(frag.data.pts_start_computed + 1000 * frag.duration - pts))) {
                     return frag.seqnum;
                 }
             }
@@ -92,9 +92,9 @@ CONFIG::LOGGING {
 
         public function getLevelstartPTS() : Number {
             if (fragments.length)
-                return fragments[0].start_pts_computed;
+                return fragments[0].data.pts_start_computed;
             else
-                return Number.NEGATIVE_INFINITY;
+                return NaN;
         }
 
         /** Return the fragment index from fragment sequence number **/
@@ -119,7 +119,7 @@ CONFIG::LOGGING {
         /** Return the first index matching with given continuity counter **/
         private function getFirstIndexfromContinuity(continuity : int) : int {
             // look for first fragment matching with given continuity index
-            var len:int = fragments.length;
+            var len : int = fragments.length;
             for (var i : int = 0; i < len; i++) {
                 if (fragments[i].continuity == continuity)
                     return i;
@@ -164,16 +164,15 @@ CONFIG::LOGGING {
 
         /** set Fragments **/
         public function updateFragments(_fragments : Vector.<Fragment>) : void {
-            var idx_with_pts : int = -1;
+            var idx_with_metrics : int = -1;
             var len : int = _fragments.length;
             var frag : Fragment;
             // update PTS from previous fragments
             for (var i : int = 0; i < len; i++) {
                 frag = getFragmentfromSeqNum(_fragments[i].seqnum);
-                if (frag != null && frag.start_pts != Number.NEGATIVE_INFINITY) {
-                    _fragments[i].start_pts = frag.start_pts;
-                    _fragments[i].duration = frag.duration;
-                    idx_with_pts = i;
+                if (frag != null && !isNaN(frag.data.pts_start)) {
+                    _fragments[i].data = frag.data;
+                    idx_with_metrics = i;
                 }
             }
             updateFragmentsProgramDate(_fragments);
@@ -182,9 +181,9 @@ CONFIG::LOGGING {
             start_seqnum = _fragments[0].seqnum;
             end_seqnum = _fragments[len - 1].seqnum;
 
-            if (idx_with_pts != -1) {
+            if (idx_with_metrics != -1) {
                 // if at least one fragment contains PTS info, recompute PTS information for all fragments
-                updateFragment(fragments[idx_with_pts].seqnum, true, fragments[idx_with_pts].start_pts, fragments[idx_with_pts].start_pts + 1000 * fragments[idx_with_pts].duration);
+                updateFragment(fragments[idx_with_metrics].seqnum, true, fragments[idx_with_metrics].data.pts_start, fragments[idx_with_metrics].data.pts_start + 1000 * fragments[idx_with_metrics].duration);
             } else {
                 duration = _fragments[len - 1].start_time + _fragments[len - 1].duration;
             }
@@ -217,24 +216,24 @@ CONFIG::LOGGING {
             var frag_from : Fragment = fragments[from_index];
             var frag_to : Fragment = fragments[to_index];
 
-            if (frag_from.valid && frag_to.valid) {
-                if (frag_to.start_pts != Number.NEGATIVE_INFINITY) {
+            if (frag_from.data.valid && frag_to.data.valid) {
+                if (!isNaN(frag_to.data.pts_start)) {
                     // we know PTS[to_index]
-                    frag_to.start_pts_computed = frag_to.start_pts;
+                    frag_to.data.pts_start_computed = frag_to.data.pts_start;
                     /* normalize computed PTS value based on known PTS value.
                      * this is to avoid computing wrong fragment duration in case of PTS looping */
-                    var from_pts : Number = PTS.normalize(frag_to.start_pts, frag_from.start_pts_computed);
+                    var from_pts : Number = PTS.normalize(frag_to.data.pts_start, frag_from.data.pts_start_computed);
                     /* update fragment duration. 
                     it helps to fix drifts between playlist reported duration and fragment real duration */
                     if (to_index > from_index) {
-                        frag_from.duration = (frag_to.start_pts - from_pts) / 1000;
+                        frag_from.duration = (frag_to.data.pts_start - from_pts) / 1000;
                         CONFIG::LOGGING {
                             if (frag_from.duration < 0) {
                                 Log.error("negative duration computed for " + frag_from + ", there should be some duration drift between playlist and fragment!");
                             }
                         }
                     } else {
-                        frag_to.duration = ( from_pts - frag_to.start_pts) / 1000;
+                        frag_to.duration = ( from_pts - frag_to.data.pts_start) / 1000;
                         CONFIG::LOGGING {
                             if (frag_to.duration < 0) {
                                 Log.error("negative duration computed for " + frag_to + ", there should be some duration drift between playlist and fragment!");
@@ -244,9 +243,9 @@ CONFIG::LOGGING {
                 } else {
                     // we dont know PTS[to_index]
                     if (to_index > from_index)
-                        frag_to.start_pts_computed = frag_from.start_pts_computed + 1000 * frag_from.duration;
+                        frag_to.data.pts_start_computed = frag_from.data.pts_start_computed + 1000 * frag_from.duration;
                     else
-                        frag_to.start_pts_computed = frag_from.start_pts_computed - 1000 * frag_to.duration;
+                        frag_to.data.pts_start_computed = frag_from.data.pts_start_computed - 1000 * frag_to.duration;
                 }
             }
         }
@@ -261,13 +260,13 @@ CONFIG::LOGGING {
                 var frag : Fragment = fragments[fragIdx];
                 // update fragment start PTS + duration
                 if (valid) {
-                    frag.start_pts = min_pts;
-                    frag.start_pts_computed = min_pts;
+                    frag.data.pts_start = min_pts;
+                    frag.data.pts_start_computed = min_pts;
                     frag.duration = (max_pts - min_pts) / 1000;
                 } else {
                     frag.duration = 0;
                 }
-                frag.valid = valid;
+                frag.data.valid = valid;
                 // CONFIG::LOGGING {
                 // Log.info("SN["+fragments[fragIdx].seqnum+"]:pts/duration:" + fragments[fragIdx].start_pts_computed + "/" + fragments[fragIdx].duration);
                 // }
@@ -290,7 +289,7 @@ CONFIG::LOGGING {
 
                 // second, adjust fragment offset
                 var start_time_offset : Number = fragments[0].start_time;
-                var len:int = fragments.length;
+                var len : int = fragments.length;
                 for (i = 0; i < len; i++) {
                     fragments[i].start_time = start_time_offset;
                     start_time_offset += fragments[i].duration;
