@@ -3,6 +3,8 @@ package com.globo {
     import org.mangui.chromeless.ChromelessPlayer;
     import org.mangui.hls.*;
     import org.mangui.hls.utils.Log;
+	import org.mangui.hls.event.HLSEvent;
+	import org.mangui.hls.event.HLSError;
 
     import flash.display.*;
     import flash.system.Security;
@@ -24,7 +26,7 @@ package com.globo {
             Security.allowDomain("*");
             Security.allowInsecureDomain("*");
             this.playbackId = LoaderInfo(this.root.loaderInfo).parameters.playbackId;
-            ExternalInterface.call("console.log", "HLS Initialized (0.1.1 - id: " + this.playbackId + ")");
+            ExternalInterface.call("console.log", "HLS Initialized (0.1.2 - id: " + this.playbackId + ")");
             setTimeout(flashReady, 50);
         }
 
