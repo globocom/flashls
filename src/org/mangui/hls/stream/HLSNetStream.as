@@ -70,6 +70,8 @@ package org.mangui.hls.stream {
         private var _cur_level : int;
         private var _cur_sn : int;
         private var _playbackLevel : int;
+        /** Netstream client proxy */
+        private var _client : HLSNetStreamClient;
 
         /** Create the buffer. **/
         public function HLSNetStream(connection : NetConnection, hls : HLS, fragmentLoader : FragmentLoader) : void {
@@ -84,6 +86,9 @@ package org.mangui.hls.stream {
             _seekState = HLSSeekStates.IDLE;
             _timer = new Timer(100, 0);
             _timer.addEventListener(TimerEvent.TIMER, _checkBuffer);
+	    _client = new HLSNetStreamClient();
+            _client.registerCallback("onHLSFragmentChange", onHLSFragmentChange);
+            super.client = _client;
         };
 
         public function onHLSFragmentChange(level : int, seqnum : int, cc : int, audio_only : Boolean, width : int, height : int, ... tags) : void {
@@ -329,7 +334,6 @@ package org.mangui.hls.stream {
                 // same continuity than previously, update its max PTS
                 _buffer_cur_max_pts = max_pts;
             }
-
             /* detect if we are switching to a new fragment. in that case inject a metadata tag
              * Netstream will notify the metadata back when starting playback of this fragment  
              */
@@ -508,7 +512,7 @@ package org.mangui.hls.stream {
             _seek_position_real = Number.NEGATIVE_INFINITY;
             _seek_in_progress = true;
             _reached_vod_end = false;
-            _cur_level = _cur_sn = NaN;
+            _cur_level = _cur_sn = -1;
             if (HLSSettings.minBufferLength == -1) {
                 _buffer_threshold = _autoBufferManager.minBufferLength;
             } else {
@@ -537,6 +541,14 @@ package org.mangui.hls.stream {
             super.pause();
             _timer.start();
         };
+
+        public override function set client(client : Object) : void {
+            _client.delegate = client;
+        };
+
+        public override function get client() : Object {
+            return _client.delegate;
+        }
 
         /** Stop playback. **/
         override public function close() : void {
