@@ -6,6 +6,8 @@ package com.globo {
 	import org.mangui.hls.event.HLSEvent;
 	import org.mangui.hls.event.HLSError;
 
+    import org.mangui.hls.model.Level;
+
     import flash.display.*;
     import flash.system.Security;
     import flash.media.Video;
@@ -26,7 +28,7 @@ package com.globo {
             Security.allowDomain("*");
             Security.allowInsecureDomain("*");
             this.playbackId = LoaderInfo(this.root.loaderInfo).parameters.playbackId;
-            ExternalInterface.call("console.log", "HLS Initialized (0.1.4 - id: " + this.playbackId + ")");
+            ExternalInterface.call("console.log", "HLS Initialized (0.1.5 - id: " + this.playbackId + ")");
             setTimeout(flashReady, 50);
         }
 
@@ -65,6 +67,16 @@ package com.globo {
 
         protected function flashReady(): void {
             _triggerEvent('flashready');
+        };
+
+        override protected function _getLevels() : Vector.<Level> {
+            var levels : Vector.<Level> = new Vector.<Level>();
+            for each (var level : Level in _hls.levels) {
+                var newLevel : Level = new Level();
+                newLevel.bitrate = level.bitrate;
+                levels.push(newLevel);
+            }
+            return levels;
         };
 
         override protected function _onStageVideoState(event : StageVideoAvailabilityEvent) : void {
