@@ -3,8 +3,8 @@ package com.globo {
     import org.mangui.chromeless.ChromelessPlayer;
     import org.mangui.hls.*;
     import org.mangui.hls.utils.Log;
-	import org.mangui.hls.event.HLSEvent;
-	import org.mangui.hls.event.HLSError;
+    import org.mangui.hls.event.HLSEvent;
+    import org.mangui.hls.event.HLSError;
 
     import org.mangui.hls.model.Level;
 
@@ -28,7 +28,7 @@ package com.globo {
             Security.allowDomain("*");
             Security.allowInsecureDomain("*");
             this.playbackId = LoaderInfo(this.root.loaderInfo).parameters.playbackId;
-            ExternalInterface.call("console.log", "HLS Initialized (0.1.5 - id: " + this.playbackId + ")");
+            ExternalInterface.call("console.log", "HLS Initialized (0.1.6 - id: " + this.playbackId + ")");
             setTimeout(flashReady, 50);
         }
 
@@ -58,6 +58,9 @@ package com.globo {
             ExternalInterface.addCallback("globoPlayerSmoothSetLevel", _smoothSetLevel);
             ExternalInterface.addCallback("globoPlayerSetflushLiveURLCache", _setflushLiveURLCache);
             ExternalInterface.addCallback("globoPlayerSetStageScaleMode", _setScaleMode);
+            ExternalInterface.addCallback("globoPlayerSetmaxBufferLength", _setmaxBufferLength);
+            ExternalInterface.addCallback("globoPlayerSetminBufferLength", _setminBufferLength);
+            ExternalInterface.addCallback("globoPlayerSetlowBufferLength", _setlowBufferLength);
         };
 
         private function _triggerEvent(eventName: String, param:String=null):void {
