@@ -28,7 +28,7 @@ package com.globo {
             Security.allowDomain("*");
             Security.allowInsecureDomain("*");
             this.playbackId = LoaderInfo(this.root.loaderInfo).parameters.playbackId;
-            ExternalInterface.call("console.log", "HLS Initialized (0.1.6 - id: " + this.playbackId + ")");
+            ExternalInterface.call("console.log", "HLS Initialized (0.1.7 - id: " + this.playbackId + ")");
             setTimeout(flashReady, 50);
         }
 
@@ -89,6 +89,7 @@ package com.globo {
             _hls.addEventListener(HLSEvent.ERROR, _errorHandler);
             _hls.addEventListener(HLSEvent.MEDIA_TIME, _mediaTimeHandler);
             _hls.addEventListener(HLSEvent.PLAYBACK_STATE, _stateHandler);
+            _hls.addEventListener(HLSEvent.FRAGMENT_LOADED, _fragmentLoadedHandler);
 
             if (available && stage.stageVideos.length > 0) {
                 _stageVideo = stage.stageVideos[0];
@@ -112,6 +113,11 @@ package com.globo {
         override protected function _stateHandler(event : HLSEvent) : void {
             _triggerEvent('playbackstate', event.state);
         };
+
+        override protected function _fragmentLoadedHandler(event : HLSEvent) : void {
+            _triggerEvent('fragmentloaded');
+        };
+
 
         override protected function _mediaTimeHandler(event : HLSEvent) : void {
             _duration = event.mediatime.duration;
