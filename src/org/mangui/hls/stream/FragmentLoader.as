@@ -592,7 +592,7 @@ package org.mangui.hls.stream {
             } else {
                 // level switch
                 /*  setting below flag to true will force PTS check to ensure we are loading the correct fragment */
-                _pts_analyzing = true;
+//                _pts_analyzing = true;
                 // trust program-time : if program-time defined in previous loaded fragment, try to find seqnum matching program-time in new level.
                 if (frag_previous.program_date) {
                     last_seqnum = _levels[level].getSeqNumFromProgramDate(frag_previous.program_date);
