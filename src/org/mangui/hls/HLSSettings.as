@@ -12,7 +12,7 @@ package org.mangui.hls {
          *
          * Default is false
          */
-        public static var capLevelToStage : Boolean = true;
+        public static var capLevelToStage : Boolean = false;
 
         /**
          * Defines the max level capping mode to the one available in HLSMaxLevelCappingMode
