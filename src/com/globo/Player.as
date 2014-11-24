@@ -28,7 +28,7 @@ package com.globo {
             Security.allowDomain("*");
             Security.allowInsecureDomain("*");
             this.playbackId = LoaderInfo(this.root.loaderInfo).parameters.playbackId;
-            ExternalInterface.call("console.log", "HLS Initialized (0.2.1 - id: " + this.playbackId + ")");
+            ExternalInterface.call("console.log", "HLS Initialized (0.2.2 - id: " + this.playbackId + ")");
             setTimeout(flashReady, 50);
         }
 
