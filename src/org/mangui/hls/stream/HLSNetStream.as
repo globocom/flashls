@@ -1,14 +1,19 @@
-package org.mangui.hls.stream {
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+ package org.mangui.hls.stream {
+    import org.mangui.hls.controller.AutoBufferController;
+    import org.mangui.hls.loader.FragmentLoader;
     import org.mangui.hls.event.HLSPlayMetrics;
-    import org.mangui.hls.constant.HLSSeekMode;
     import org.mangui.hls.event.HLSError;
+    import org.mangui.hls.event.HLSEvent;
     import org.mangui.hls.event.HLSMediatime;
-    import org.mangui.hls.HLSSettings;
     import org.mangui.hls.constant.HLSSeekStates;
     import org.mangui.hls.constant.HLSPlayStates;
+    import org.mangui.hls.constant.HLSSeekMode;
     import org.mangui.hls.flv.FLVTag;
     import org.mangui.hls.HLS;
-    import org.mangui.hls.event.HLSEvent;
+    import org.mangui.hls.HLSSettings;
     import org.mangui.hls.utils.Hex;
 
     import flash.events.Event;
@@ -25,7 +30,7 @@ package org.mangui.hls.stream {
         /** Reference to the framework controller. **/
         private var _hls : HLS;
         /** reference to auto buffer manager */
-        private var _autoBufferManager : AutoBufferManager;
+        private var _autoBufferController : AutoBufferController;
         /** FLV tags buffer vector **/
         private var _flvTagBuffer : Vector.<FLVTag>;
         /** FLV tags buffer duration **/
@@ -79,7 +84,7 @@ package org.mangui.hls.stream {
             super(connection);
             super.bufferTime = 0.1;
             _hls = hls;
-            _autoBufferManager = new AutoBufferManager(hls);
+            _autoBufferController = new AutoBufferController(hls);
             _fragmentLoader = fragmentLoader;
             _hls.addEventListener(HLSEvent.LAST_VOD_FRAGMENT_LOADED, _lastVODFragmentLoadedHandler);
             _hls.addEventListener(HLSEvent.PLAYLIST_DURATION_UPDATED, _playlistDurationUpdated);
@@ -149,24 +154,26 @@ package org.mangui.hls.stream {
             if (!_seek_in_progress) {
                 // check low buffer condition
                 if (buffer < HLSSettings.lowBufferLength) {
-                    if (buffer <= 0.01 && _reached_vod_end) {
-                        /* reach end of playlist + empty buffer :
-                        playback complete : stop timer, report event and switch to IDLE mode. */
-                        _timer.stop();
-                        CONFIG::LOGGING {
-                            Log.debug("reached end of VOD playlist, notify playback complete");
-                        }
-                        _hls.dispatchEvent(new HLSEvent(HLSEvent.PLAYBACK_COMPLETE));
-                        _setPlaybackState(HLSPlayStates.IDLE);
-                        _setSeekState(HLSSeekStates.IDLE);
-                        return;
-                    } else if (buffer <= 0.1 && !_reached_vod_end) {
-                        // pause Netstream in really low buffer condition
-                        super.pause();
-                        if (HLSSettings.minBufferLength == -1) {
-                            _buffer_threshold = _autoBufferManager.minBufferLength;
+                    if (buffer <= 0.1) {
+                        if (_reached_vod_end) {
+                            // reach end of playlist + playback complete (as buffer is empty).
+                            // stop timer, report event and switch to IDLE mode.
+                            _timer.stop();
+                            CONFIG::LOGGING {
+                                Log.debug("reached end of VOD playlist, notify playback complete");
+                            }
+                            _hls.dispatchEvent(new HLSEvent(HLSEvent.PLAYBACK_COMPLETE));
+                            _setPlaybackState(HLSPlayStates.IDLE);
+                            _setSeekState(HLSSeekStates.IDLE);
+                            return;
                         } else {
-                            _buffer_threshold = HLSSettings.minBufferLength;
+                            // pause Netstream in really low buffer condition
+                            super.pause();
+                            if (HLSSettings.minBufferLength == -1) {
+                                _buffer_threshold = _autoBufferController.minBufferLength;
+                            } else {
+                                _buffer_threshold = HLSSettings.minBufferLength;
+                            }
                         }
                     }
                     // dont switch to buffering state in case we reached end of a VOD playlist
@@ -188,7 +195,7 @@ package org.mangui.hls.stream {
                      */
                     if (HLSSettings.minBufferLength == -1) {
                         // in automode, low buffer threshold should be less than min auto buffer
-                        _buffer_threshold = Math.min(_autoBufferManager.minBufferLength / 2, HLSSettings.lowBufferLength);
+                        _buffer_threshold = Math.min(_autoBufferController.minBufferLength / 2, HLSSettings.lowBufferLength);
                     } else {
                         _buffer_threshold = HLSSettings.lowBufferLength;
                     }
@@ -212,6 +219,12 @@ package org.mangui.hls.stream {
                     let's flush netstream now
                     this is to avoid black screen during seek command */
                     super.close();
+                    CONFIG::FLASH_11_1 {
+                        try {
+                            super.useHardwareDecoder = HLSSettings.useHardwareVideoDecoder;
+                        } catch(e : Error) {
+                        }
+                    }
                     super.play(null);
                     super.appendBytesAction(NetStreamAppendBytesAction.RESET_SEEK);
                     // immediatly pause NetStream, it will be resumed when enough data will be buffered in the NetStream
@@ -248,7 +261,7 @@ package org.mangui.hls.stream {
             }
             // update buffer threshold here if needed
             if (HLSSettings.minBufferLength == -1) {
-                _buffer_threshold = _autoBufferManager.minBufferLength;
+                _buffer_threshold = _autoBufferController.minBufferLength;
             }
         };
 
@@ -529,7 +542,7 @@ package org.mangui.hls.stream {
             _reached_vod_end = false;
             _cur_level = _cur_sn = -1;
             if (HLSSettings.minBufferLength == -1) {
-                _buffer_threshold = _autoBufferManager.minBufferLength;
+                _buffer_threshold = _autoBufferController.minBufferLength;
             } else {
                 _buffer_threshold = HLSSettings.minBufferLength;
             }
@@ -579,7 +592,7 @@ package org.mangui.hls.stream {
 
         public function dispose_() : void {
             close();
-            _autoBufferManager.dispose();
+            _autoBufferController.dispose();
             _hls.removeEventListener(HLSEvent.LAST_VOD_FRAGMENT_LOADED, _lastVODFragmentLoadedHandler);
             _hls.removeEventListener(HLSEvent.PLAYLIST_DURATION_UPDATED, _playlistDurationUpdated);
         }
