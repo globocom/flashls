@@ -28,7 +28,7 @@ package com.globo {
             Security.allowDomain("*");
             Security.allowInsecureDomain("*");
             this.playbackId = LoaderInfo(this.root.loaderInfo).parameters.playbackId;
-            ExternalInterface.call("console.log", "HLS Initialized (0.2.2 - id: " + this.playbackId + ")");
+            ExternalInterface.call("console.log", "HLS Initialized (0.2.3 - id: " + this.playbackId + ")");
             setTimeout(flashReady, 50);
         }
 
@@ -38,9 +38,10 @@ package com.globo {
             ExternalInterface.addCallback("globoGetPosition", _getPosition);
             ExternalInterface.addCallback("globoGetType", _getType);
             ExternalInterface.addCallback("globoGetLevel", _getLevel);
+            ExternalInterface.addCallback("globoGetPlaybackLevel", _getPlaybackLevel);
             ExternalInterface.addCallback("globoGetLevels", _getLevels);
-            ExternalInterface.addCallback("globoGetbufferLength", _getbufferLength);
             ExternalInterface.addCallback("globoGetAutoLevel", _getAutoLevel);
+            ExternalInterface.addCallback("globoGetbufferLength", _getbufferLength);
             ExternalInterface.addCallback("globoGetLastProgramDate", _getLastProgramDate);
             ExternalInterface.addCallback("globoGetDroppedFrames", _getDroppedFrames);
             ExternalInterface.addCallback("globoRemoveLevel", _removeLevel);
@@ -136,9 +137,9 @@ package com.globo {
                     _videoWidth = videoWidth;
                     _resize();
                     if (videoHeight >= 720) {
-                        _triggerEvent('highdefinition', "true");
+                        _triggerEvent('levelchanged', "hd");
                     } else {
-                        _triggerEvent('highdefinition', "false");
+                        _triggerEvent('levelchanged', "not-hd");
                     }
                 }
             }
