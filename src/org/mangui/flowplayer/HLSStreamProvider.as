@@ -42,6 +42,7 @@ package org.mangui.flowplayer {
         // event values
         private var _position : Number = 0;
         private var _duration : Number = 0;
+        private var _durationCapped : Number = 0;
         private var _bufferedTime : Number = 0;
         private var _videoWidth : int = -1;
         private var _videoHeight : int = -1;
@@ -99,9 +100,15 @@ package org.mangui.flowplayer {
         };
 
         private function _manifestHandler(event : HLSEvent) : void {
-            _duration = event.levels[_hls.startlevel].duration;
+            _duration = event.levels[_hls.startlevel].duration - _clip.start;
             _isManifestLoaded = true;
-            _clip.duration = _duration;
+            // only update duration if not capped
+            if (!_durationCapped) {
+                _clip.duration = _duration;
+            } else {
+                // ensure capped duration is lt real one
+                _durationCapped = Math.min(_durationCapped, _duration);
+            }
             _clip.stopLiveOnPause = false;
             /*
             var nbLevel = event.levels.length;
@@ -122,12 +129,8 @@ package org.mangui.flowplayer {
              */
             _clip.dispatch(ClipEventType.METADATA);
             _seekable = true;
-            // if (_hls.type == HLSTypes.LIVE) {
-            // _seekable = false;
-            // } else {
-            // _seekable = true;
-            // }
-            _hls.stream.play();
+            // real seek position : add clip.start offset. if not defined, use -1 to fix seeking issue on live playlist
+            _hls.stream.play(null, (_clip.start == 0) ? -1 : _clip.start);
             _clip.dispatch(ClipEventType.SEEK, 0);
             if (_pauseAfterStart) {
                 pause(new ClipEvent(ClipEventType.PAUSE));
@@ -135,10 +138,23 @@ package org.mangui.flowplayer {
         };
 
         private function _mediaTimeHandler(event : HLSEvent) : void {
-            _position = Math.max(0, event.mediatime.position);
-            _duration = event.mediatime.duration;
-            _clip.duration = _duration;
-            _bufferedTime = event.mediatime.buffer + event.mediatime.position;
+            _position = Math.max(0, event.mediatime.position - _clip.start) ;
+            _duration = event.mediatime.duration - _clip.start;
+            // only update duration if not capped
+            if (!_durationCapped) {
+                _clip.duration = _duration;
+                _bufferedTime = Math.min(event.mediatime.buffer + _position, _duration);
+            } else {
+                // ensure capped duration is lt real one
+                _durationCapped = Math.min(_durationCapped, _duration);
+                _bufferedTime = Math.min(event.mediatime.buffer + _position, _durationCapped);
+                if (_durationCapped - _position <= 0.1) {
+                    // reach end of stream, stop playback and simulate complete event
+                    _hls.stream.close();
+                    _clip.dispatchBeforeEvent(new ClipEvent(ClipEventType.FINISH));
+                    _clip.startDispatched = false;
+                }
+            }
             var videoWidth : int = _video.videoWidth;
             var videoHeight : int = _video.videoHeight;
             if (videoWidth && videoHeight) {
@@ -196,9 +212,12 @@ package org.mangui.flowplayer {
             _clip = clip;
             CONFIG::LOGGING {
                 Log.info("load()" + clip.completeUrl);
+                Log.info("clip.start:" + clip.start);
+                Log.info("clip.duration:" + clip.duration);
             }
             _hls.load(clip.completeUrl);
             _pauseAfterStart = pauseAfterStart;
+            _durationCapped = clip.duration;
             clip.type = ClipType.VIDEO;
             clip.dispatch(ClipEventType.BEGIN);
             clip.setNetStream(_hls.stream);
@@ -291,7 +310,8 @@ package org.mangui.flowplayer {
             CONFIG::LOGGING {
                 Log.info("seek()");
             }
-            _hls.stream.seek(seconds);
+            // real seek position : add clip.start offset
+            _hls.stream.seek(seconds + _clip.start);
             _position = seconds;
             _bufferedTime = seconds;
             _clip.dispatch(ClipEventType.SEEK, seconds);

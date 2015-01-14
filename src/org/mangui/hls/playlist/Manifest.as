@@ -145,8 +145,9 @@
 
             while (i < lines.length) {
                 var line : String = lines[i++];
-                // discard blank line, length could be 0 or 1 if DOS terminated line (CR/LF)
-                if (line.length <= 1) {
+
+                // discard blank line, length could be 0 or if DOS terminated line (CR/LF), only a CR char
+                if (line.length <= 0 || line.indexOf("\r") == 0) {
                     continue;
                 }
 
@@ -237,8 +238,13 @@
                     var hour : int = parseInt(line.substr(36, 2));
                     var minutes : int = parseInt(line.substr(39, 2));
                     var seconds : int = parseInt(line.substr(42, 2));
+                    var milliseconds : int = 0;
+                    if (line.charAt(44) == ".") {
+                        var ms_size : int = line.indexOf("+") - 45;
+                        milliseconds = parseInt(line.substr(45, ms_size));
+                    }
                     // month should be from 0 (January) to 11 (December).
-                    program_date = new Date(year, (month - 1), day, hour, minutes, seconds).getTime();
+                    program_date = new Date(year, (month - 1), day, hour, minutes, seconds, milliseconds).getTime();
                     program_date_defined = true;
                     tag_list.push(line);
                 } else if (line.indexOf(DISCONTINUITY) == 0) {
