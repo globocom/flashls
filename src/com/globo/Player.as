@@ -28,7 +28,7 @@ package com.globo {
             Security.allowDomain("*");
             Security.allowInsecureDomain("*");
             this.playbackId = LoaderInfo(this.root.loaderInfo).parameters.playbackId;
-            ExternalInterface.call("console.log", "HLS Initialized (0.2.3 - id: " + this.playbackId + ")");
+            ExternalInterface.call("console.log", "HLS Initialized (0.2.4 - id: " + this.playbackId + ")");
             setTimeout(flashReady, 50);
         }
 
@@ -129,6 +129,7 @@ package com.globo {
 
             var videoWidth : int = _video ? _video.videoWidth : _stageVideo.videoWidth;
             var videoHeight : int = _video ? _video.videoHeight : _stageVideo.videoHeight;
+
 
             if (videoWidth && videoHeight) {
                 var changed : Boolean = _videoWidth != videoWidth || _videoHeight != videoHeight;

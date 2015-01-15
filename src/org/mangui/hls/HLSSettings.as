@@ -59,7 +59,7 @@ package org.mangui.hls {
          *
          * Default is HLSSeekMode.ACCURATE_SEEK.
          */
-        public static var seekMode : String = HLSSeekMode.ACCURATE_SEEK;
+        public static var seekMode : String = HLSSeekMode.KEYFRAME_SEEK;
         /** max nb of retries for Key Loading in case I/O errors are met,
          *      0, means no retry, error will be triggered automatically
          *     -1 means infinite retry
