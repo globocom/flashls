@@ -244,7 +244,7 @@
                         milliseconds = parseInt(line.substr(45, ms_size));
                     }
                     // month should be from 0 (January) to 11 (December).
-                    program_date = new Date(year, (month - 1), day, hour, minutes, seconds, milliseconds).getTime();
+                    program_date = new Date(year, (month - 1), day, hour, minutes, seconds).getTime();
                     program_date_defined = true;
                     tag_list.push(line);
                 } else if (line.indexOf(DISCONTINUITY) == 0) {
