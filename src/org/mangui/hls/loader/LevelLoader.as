@@ -1,7 +1,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
- package org.mangui.hls.loader {
+package org.mangui.hls.loader {
     import org.mangui.hls.playlist.DataUri;
     import org.mangui.hls.playlist.AltAudioTrack;
     import org.mangui.hls.playlist.Manifest;
@@ -22,7 +22,7 @@
         import org.mangui.hls.utils.Log;
     }
     /** Loader for hls manifests. **/
-    public class ManifestLoader {
+    public class LevelLoader {
         /** Reference to the hls framework controller. **/
         private var _hls : HLS;
         /** levels vector. **/
@@ -54,7 +54,7 @@
         private var _alt_audio_tracks : Vector.<AltAudioTrack>;
 
         /** Setup the loader. **/
-        public function ManifestLoader(hls : HLS) {
+        public function LevelLoader(hls : HLS) {
             _hls = hls;
             _hls.addEventListener(HLSEvent.PLAYBACK_STATE, _stateHandler);
             _hls.addEventListener(HLSEvent.LEVEL_SWITCH, _levelSwitchHandler);
@@ -141,6 +141,7 @@
             _reload_playlists_timer = getTimer();
             _retry_timeout = 1000;
             _retry_count = 0;
+            _alt_audio_tracks = null;
             _hls.dispatchEvent(new HLSEvent(HLSEvent.MANIFEST_LOADING, url));
 
             if (DataUri.isDataUri(url)) {
@@ -170,7 +171,7 @@
                 CONFIG::LOGGING {
                     Log.debug("level " + level + " playlist:\n" + string);
                 }
-                var frags : Vector.<Fragment> = Manifest.getFragments(string, url);
+                var frags : Vector.<Fragment> = Manifest.getFragments(string, url, level);
                 _last_program_date = frags[frags.length-1].program_date;
                 // set fragment and update sequence number range
                 _levels[level].updateFragments(frags);
@@ -184,7 +185,14 @@
                 _hls.dispatchEvent(new HLSEvent(HLSEvent.LEVEL_ENDLIST, level));
             } else {
                 _type = HLSTypes.LIVE;
-                var timeout : Number = Math.max(100, _reload_playlists_timer + 1000 * _levels[level].averageduration - getTimer());
+                /* in order to determine playlist reload timer, 
+                    check playback position against playlist duration. 
+                    if we are near the edge of a live playlist, reload playlist quickly
+                    to discover quicker new fragments and avoid buffer starvation.
+                */
+                var reload_interval : Number = 1000*Math.min((_levels[level].duration - _hls.position)/2,_levels[level].averageduration);
+                // avoid spamming the server if we are at the edge ... wait 500ms between 2 reload at least
+                var timeout : Number = Math.max(500, _reload_playlists_timer + reload_interval - getTimer());
                 CONFIG::LOGGING {
                     Log.debug("Level " + level + " Live Playlist parsing finished: reload in " + timeout.toFixed(0) + " ms");
                 }
@@ -226,7 +234,7 @@
                     // adaptative playlist, extract levels from playlist, get them and parse them
                     _levels = Manifest.extractLevels(_hls, string, _url);
                     // retrieve start level from helper function
-                    _current_level = startlevel;
+                    _current_level = _hls.startlevel;
                     _hls.dispatchEvent(new HLSEvent(HLSEvent.MANIFEST_PARSED, _levels));
                     _loadActiveLevelPlaylist();
                     if (string.indexOf(Manifest.ALTERNATE_AUDIO) > 0) {
@@ -300,95 +308,5 @@
                 _close();
             }
         };
-
-        public function get startlevel() : int {
-            var start_level : int = -1;
-            if (levels) {
-                if (HLSSettings.startFromLevel === -1 && HLSSettings.startFromBitrate === -1) {
-                    /* if startFromLevel is set to -1, it means that effective startup level
-                     * will be determined from first segment download bandwidth
-                     * let's use lowest bitrate for this download bandwidth assessment
-                     * this should speed up playback start time
-                     */
-                    return 0;
-                }
-
-                // set up start level as being the lowest non-audio level.
-                for (var i : int = 0; i < _levels.length; i++) {
-                    if (!_levels[i].audio) {
-                        start_level = i;
-                        break;
-                    }
-                }
-                // in case of audio only playlist, force startLevel to 0
-                if (start_level == -1) {
-                    CONFIG::LOGGING {
-                        Log.info("playlist is audio-only");
-                    }
-                    start_level = 0;
-                } else {
-                    if (HLSSettings.startFromBitrate > 0) {
-                        start_level = findIndexOfClosestLevel(HLSSettings.startFromBitrate);
-                    } else if (HLSSettings.startFromLevel > 0) {
-                        // adjust start level using a rule by 3
-                        start_level += Math.round(HLSSettings.startFromLevel * (_levels.length - start_level - 1));
-                    }
-                }
-            }
-            CONFIG::LOGGING {
-                Log.debug("start level :" + start_level);
-            }
-            return start_level;
-        }
-
-        /**
-         * @param desiredBitrate
-         * @return The index of the level that has a bitrate closest to the desired bitrate.
-         */
-        private function findIndexOfClosestLevel(desiredBitrate:Number) : int {
-            var levelIndex : int = -1;
-            var minDistance : Number = Number.MAX_VALUE;
-
-            for (var index : int = 0; index < _levels.length; index++) {
-                var level : Level = _levels[index];
-
-                var distance : Number = Math.abs(desiredBitrate - level.bitrate);
-
-                if (distance < minDistance) {
-                    levelIndex = index;
-                    minDistance = distance;
-                }
-            }
-            return levelIndex;
-        }
-
-        public function get seeklevel() : int {
-            var seek_level : int = -1;
-            if (HLSSettings.seekFromLevel == -1) {
-                // keep last level
-                return _hls.level;
-            }
-
-            // set up seek level as being the lowest non-audio level.
-            for (var i : int = 0; i < _levels.length; i++) {
-                if (!_levels[i].audio) {
-                    seek_level = i;
-                    break;
-                }
-            }
-            // in case of audio only playlist, force seek_level to 0
-            if (seek_level == -1) {
-                seek_level = 0;
-            } else {
-                if (HLSSettings.seekFromLevel > 0) {
-                    // adjust start level using a rule by 3
-                    seek_level += Math.round(HLSSettings.seekFromLevel * (_levels.length - seek_level - 1));
-                }
-            }
-            CONFIG::LOGGING {
-                Log.debug("seek level :" + seek_level);
-            }
-            return seek_level;
-        }
     }
 }

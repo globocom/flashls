@@ -19,6 +19,7 @@
         private static var _paramMap : Dictionary = new Dictionary();
         _paramMap["minbufferlength"] = "minBufferLength";
         _paramMap["maxbufferlength"] = "maxBufferLength";
+        _paramMap["maxbackbufferlength"] = "maxBackBufferLength";
         _paramMap["lowbufferlength"] = "lowBufferLength";
         _paramMap["seekmode"] = "seekMode";
         _paramMap["startfromlevel"] = "startFromLevel";
@@ -28,6 +29,7 @@
         _paramMap["manifestloadmaxretrytimeout"] = "manifestLoadMaxRetryTimeout";
         _paramMap["fragmentloadmaxretry"] = "fragmentLoadMaxRetry";
         _paramMap["fragmentloadmaxretrytimeout"] = "fragmentLoadMaxRetryTimeout";
+        _paramMap["fragmentloadskipaftermaxretry"] = "fragmentLoadSkipAfterMaxRetry";
         _paramMap["capleveltostage"] = "capLevelToStage";
         _paramMap["maxlevelcappingmode"] = "maxLevelCappingMode";
         _paramMap["usehardwarevideodecoder"] = "useHardwareVideoDecoder";
