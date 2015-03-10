@@ -116,7 +116,7 @@ package org.mangui.hls {
         };
 
         public function removeLevel(pos:Number):void {
-            _manifestLoader.removeLevel(pos);
+            _levelLoader.removeLevel(pos);
         };
 
         /* check if we are in automatic level selection mode */
@@ -136,7 +136,7 @@ package org.mangui.hls {
 
         /** Return the last  program date **/
         public function get lastProgramDate() : Number {
-            return _manifestLoader.lastProgramDate;
+            return _levelLoader.lastProgramDate;
         }
 
         /** Return the current playback position. **/

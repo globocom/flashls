@@ -265,7 +265,7 @@ package org.mangui.hls.loader {
             // load active M3U8 playlist only
             _manifest_loading = new Manifest();
             _hls.dispatchEvent(new HLSEvent(HLSEvent.LEVEL_LOADING,_current_level));
-            _manifest_loading.loadPlaylist(_levels[_current_level].url, _parseLevelPlaylist, _errorHandler, _manifestLoadHTTPStatusHandler,
+            _manifest_loading.loadPlaylist(_levels[_current_level].url, _parseLevelPlaylist, _errorHandler,
                                            _current_level, _type, HLSSettings.flushLiveURLCache);
         };
 
