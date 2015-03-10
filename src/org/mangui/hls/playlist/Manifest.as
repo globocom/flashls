@@ -1,10 +1,11 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
- package org.mangui.hls.playlist {
+package org.mangui.hls.playlist {
     import org.mangui.hls.HLS;
     import org.mangui.hls.event.HLSEvent;
     import org.mangui.hls.event.HLSError;
+    import org.mangui.hls.utils.DateUtil;
     import org.mangui.hls.utils.Hex;
 
     import flash.events.*;
@@ -32,6 +33,8 @@
         public static const ENDLIST : String = '#EXT-X-ENDLIST';
         /** Tag that provides info related to alternative audio tracks */
         public static const ALTERNATE_AUDIO : String = '#EXT-X-MEDIA:TYPE=AUDIO,';
+        /** Tag that provides info related to alternative rendition */
+        private static const MEDIA : String = '#EXT-X-MEDIA:';
         /** Tag that provides the sequence number. **/
         private static const SEQNUM : String = '#EXT-X-MEDIA-SEQUENCE:';
         /** Tag that provides the target duration for each segment. **/
@@ -41,7 +44,7 @@
         /** Tag that indicates discontinuity sequence in the stream */
         private static const DISCONTINUITY_SEQ : String = '#EXT-X-DISCONTINUITY-SEQUENCE:';
         /** Tag that provides date/time information */
-        private static const PROGRAMDATETIME : String = '#EXT-X-PROGRAM-DATE-TIME';
+        private static const PROGRAMDATETIME : String = '#EXT-X-PROGRAM-DATE-TIME:';
         /** Tag that provides fragment decryption info */
         private static const KEY : String = '#EXT-X-KEY:';
         /** Tag that provides byte range info */
@@ -50,6 +53,7 @@
         private static const replacespace : RegExp = new RegExp("\\s+", "g");
         private static const replacesinglequote : RegExp = new RegExp("\\\'", "g");
         private static const replacedoublequote : RegExp = new RegExp("\\\"", "g");
+        private static const trimwhitespace : RegExp = /^\s*|\s*$/gim;
         /** Index in the array with levels. **/
         private var _index : int;
         /** URLLoader instance. **/
@@ -121,7 +125,7 @@
         }
 
         /** Extract fragments from playlist data. **/
-        public static function getFragments(data : String, base : String = '') : Vector.<Fragment> {
+        public static function getFragments(data : String, base : String, level : int) : Vector.<Fragment> {
             var fragments : Vector.<Fragment> = new Vector.<Fragment>();
             var lines : Array = data.split("\n");
             // fragment seqnum
@@ -232,19 +236,7 @@
                     // CONFIG::LOGGING {
                     // Log.info(line);
                     // }
-                    var year : int = parseInt(line.substr(25, 4));
-                    var month : int = parseInt(line.substr(30, 2));
-                    var day : int = parseInt(line.substr(33, 2));
-                    var hour : int = parseInt(line.substr(36, 2));
-                    var minutes : int = parseInt(line.substr(39, 2));
-                    var seconds : int = parseInt(line.substr(42, 2));
-                    var milliseconds : int = 0;
-                    if (line.charAt(44) == ".") {
-                        var ms_size : int = line.indexOf("+") - 45;
-                        milliseconds = parseInt(line.substr(45, ms_size));
-                    }
-                    // month should be from 0 (January) to 11 (December).
-                    program_date = new Date(year, (month - 1), day, hour, minutes, seconds).getTime();
+                    program_date = DateUtil.parseW3CDTF(line.substr(PROGRAMDATETIME.length)).getTime();
                     program_date_defined = true;
                     tag_list.push(line);
                 } else if (line.indexOf(DISCONTINUITY) == 0) {
@@ -278,7 +270,7 @@
                     } else {
                         fragment_decrypt_iv = null;
                     }
-                    fragments.push(new Fragment(url, duration, seqnum++, start_time, continuity_index, program_date, decrypt_url, fragment_decrypt_iv, byterange_start_offset, byterange_end_offset, tag_list));
+                    fragments.push(new Fragment(url, duration, level, seqnum++, start_time, continuity_index, program_date, decrypt_url, fragment_decrypt_iv, byterange_start_offset, byterange_end_offset, tag_list));
                     start_time += duration;
                     if (program_date_defined) {
                         program_date += 1000 * duration;
@@ -337,7 +329,7 @@
                                 level.codec_mp3 = true;
                             }
                         } else if (param.indexOf('AUDIO') > -1) {
-                            level.audio_stream_id = (param.split('=')[1] as String).replace(replacedoublequote, "");
+                            level.audio_stream_id = (param.split('=')[1] as String).replace(replacedoublequote, "").replace(trimwhitespace, "");
                         } else if (param.indexOf('NAME') > -1) {
                             level.name = (param.split('=')[1] as String).replace(replacedoublequote, "");
                         }
@@ -370,50 +362,94 @@
             var i : int = 0;
             while (i < lines.length) {
                 var line : String = lines[i++];
-                if (line.indexOf(ALTERNATE_AUDIO) == 0) {
-                    line = line.replace(replacedoublequote, "");
-                    CONFIG::LOGGING {
-                        Log.debug("parsing alternate audio level info:\n" + line);
-                    }
+                if (line.indexOf(MEDIA) == 0) {
+                    var params : Object = _parseAlternateRendition(line);
+
                     // #EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="bipbop_audio",LANGUAGE="eng",NAME="BipBop Audio 1",AUTOSELECT=YES,DEFAULT=YES
                     // #EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="bipbop_audio",LANGUAGE="eng",NAME="BipBop Audio 2",AUTOSELECT=NO,DEFAULT=NO,URI="alternate_audio_aac_sinewave/prog_index.m3u8"
-                    var params : Array = line.substr(ALTERNATE_AUDIO.length).split(',');
-                    var alt_group_id : String;
-                    var alt_lang : String;
-                    var alt_name : String;
-                    var alt_autoselect : Boolean = false;
-                    var alt_default : Boolean = false;
-                    var alt_url : String;
-                    for (var j : int = 0; j < params.length; j++) {
-                        var param : String = params[j];
-                        if (param.indexOf('GROUP-ID') > -1) {
-                            alt_group_id = param.split('=')[1];
-                        } else if (param.indexOf('LANGUAGE') > -1) {
-                            alt_lang = param.split('=')[1];
-                        } else if (param.indexOf('NAME') > -1) {
-                            alt_name = param.split('=')[1];
-                        } else if (param.indexOf('AUTOSELECT') > -1) {
-                            if (param.split('=')[1] == "NO") {
-                                alt_autoselect = false;
-                            } else {
-                                alt_autoselect = true;
-                            }
-                        } else if (param.indexOf('DEFAULT') > -1) {
-                            if (param.split('=')[1] == "NO") {
-                                alt_default = false;
-                            } else {
-                                alt_default = true;
-                            }
-                        } else if (param.indexOf('URI') > -1) {
-                            alt_url = Manifest._extractURL(param.split('=')[1], base);
-                        }
+                    // #EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subs",NAME="English",DEFAULT=YES,AUTOSELECT=YES,FORCED=NO,LANGUAGE="eng",URI="captions.m3u8"
+
+                    var uri : String = params['URI'];
+                    if (uri) {
+                        uri = _extractURL(uri, base);
                     }
-                    var alternate_audio : AltAudioTrack = new AltAudioTrack(alt_group_id, alt_lang, alt_name, alt_autoselect, alt_default, alt_url);
-                    altAudioTracks.push(alternate_audio);
+                    if (params['TYPE'] == 'AUDIO') {
+                        var alternate_audio : AltAudioTrack = new AltAudioTrack(params['GROUP-ID'], params['LANGUAGE'], params['NAME'], params['AUTOSELECT'] == 'YES', params['DEFAULT'] == 'YES', uri);
+                        altAudioTracks.push(alternate_audio);
+                    }
                 }
             }
             return altAudioTracks;
         };
+
+        private static const RENDITION_STATE_READKEY : Number = 1;
+        private static const RENDITION_STATE_READVALUESTART : Number = 2;
+        private static const RENDITION_STATE_READSIMPLEVALUE : Number = 3;
+        private static const RENDITION_STATE_READQUOTEDVALUE : Number = 4;
+        private static const STATE_READQUOTEDVALUE_END : Number = 5;
+
+        private static function _parseAlternateRendition(line : String) : Object {
+            var variables : Object = new Object();
+            var state : Number = RENDITION_STATE_READKEY;
+            var pos : Number = 0;
+            var c : String;
+            var key : String = "";
+            var value : String = "";
+            line = line.substr(MEDIA.length);
+
+            while (pos < line.length) {
+                c = line.charAt(pos);
+                pos++;
+                switch (state) {
+                    case RENDITION_STATE_READKEY:
+                        if (c == '=') {
+                            state = RENDITION_STATE_READVALUESTART;
+                        } else {
+                            key += c;
+                        }
+                        break;
+                    case RENDITION_STATE_READVALUESTART:
+                        if (c == '"') {
+                            state = RENDITION_STATE_READQUOTEDVALUE;
+                        } else {
+                            value += c;
+                            state = RENDITION_STATE_READSIMPLEVALUE;
+                        }
+                        break;
+                    case RENDITION_STATE_READSIMPLEVALUE:
+                        if (c == ",") {
+                            variables[key] = value;
+                            key = "";
+                            value = "";
+                            state = RENDITION_STATE_READKEY;
+                        } else {
+                            value += c;
+                        }
+                        break;
+                    case RENDITION_STATE_READQUOTEDVALUE:
+                        if (c == '"') {
+                            state = STATE_READQUOTEDVALUE_END;
+                        } else {
+                            value += c;
+                        }
+                        break;
+                    case STATE_READQUOTEDVALUE_END:
+                        if (c == ",") {
+                            variables[key] = value;
+                            key = "";
+                            value = "";
+                            state = RENDITION_STATE_READKEY;
+                        }
+                        break;
+                }
+            }
+
+            if (key) {
+                variables[key] = value;
+            }
+
+            return variables;
+        }
 
         /** Extract whether the stream is live or ondemand. **/
         public static function hasEndlist(data : String) : Boolean {

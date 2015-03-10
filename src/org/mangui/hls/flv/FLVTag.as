@@ -1,7 +1,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
- package org.mangui.hls.flv {
+package org.mangui.hls.flv {
     import flash.utils.ByteArray;
 
     /** Metadata needed to build an FLV tag. **/
@@ -27,7 +27,7 @@
         /** Is this a keyframe. **/
         public var keyframe : Boolean;
         /** Array with data pointers. **/
-        private var pointers : Vector.<TagData> = new Vector.<TagData>();
+        protected var pointers : Vector.<TagData> = new Vector.<TagData>();
         /** PTS of this frame. **/
         public var pts : Number;
         /** DTS of this frame. **/
@@ -146,7 +146,28 @@
             return length;
         }
         ;
-
+        CONFIG::LOGGING {
+            public function get typeString() : String {
+                switch(type) {
+                    case AAC_HEADER:
+                        return "AAC_HEADER";
+                    case AAC_RAW :
+                        return "AAC_RAW";
+                    case AVC_HEADER:
+                        return "AVC_HEADER";
+                    case AVC_NALU:
+                        return "AVC_NALU";
+                    case MP3_RAW:
+                        return "MP3_RAW";
+                    case DISCONTINUITY:
+                        return "DISCONTINUITY";
+                    case METADATA:
+                        return "METADATA";
+                    default:
+                        return "";
+                }
+            }
+        }
         /** push a data pointer into the frame. **/
         public function push(array : ByteArray, start : int, length : int) : void {
             pointers.push(new TagData(array, start, length));
@@ -158,6 +179,12 @@
             return "TAG (type: " + type + ", pts:" + pts + ", dts:" + dts + ", length:" + length + ")";
         }
         ;
+
+        public function clone() : FLVTag {
+            var cloned : FLVTag = new FLVTag(this.type, this.pts, this.dts, this.keyframe);
+            cloned.pointers = this.pointers;
+            return cloned;
+        }
     }
 }
 

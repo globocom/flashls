@@ -66,6 +66,7 @@ package org.mangui.chromeless {
             ExternalInterface.addCallback("getmaxBufferLength", _getmaxBufferLength);
             ExternalInterface.addCallback("getminBufferLength", _getminBufferLength);
             ExternalInterface.addCallback("getlowBufferLength", _getlowBufferLength);
+            ExternalInterface.addCallback("getmaxBackBufferLength", _getmaxBackBufferLength);
             ExternalInterface.addCallback("getbufferLength", _getbufferLength);
             ExternalInterface.addCallback("getLogDebug", _getLogDebug);
             ExternalInterface.addCallback("getLogDebug2", _getLogDebug2);
@@ -93,6 +94,7 @@ package org.mangui.chromeless {
             ExternalInterface.addCallback("playerSetmaxBufferLength", _setmaxBufferLength);
             ExternalInterface.addCallback("playerSetminBufferLength", _setminBufferLength);
             ExternalInterface.addCallback("playerSetlowBufferLength", _setlowBufferLength);
+            ExternalInterface.addCallback("playerSetbackBufferLength", _setbackBufferLength);
             ExternalInterface.addCallback("playerSetflushLiveURLCache", _setflushLiveURLCache);
             ExternalInterface.addCallback("playerSetstartFromLevel", _setstartFromLevel);
             ExternalInterface.addCallback("playerSetseekFromLevel", _setseekFromLevel);
@@ -124,32 +126,34 @@ package org.mangui.chromeless {
 
         /** Notify javascript the framework is ready. **/
         protected function _pingJavascript() : void {
-            ExternalInterface.call("onHLSReady", ExternalInterface.objectID);
+            ExternalInterface.call("flashlsEvents.onHLSReady", ExternalInterface.objectID);
         };
 
         /** Forward events from the framework. **/
         protected function _completeHandler(event : HLSEvent) : void {
             if (ExternalInterface.available) {
-                ExternalInterface.call("onComplete");
+            
+                ExternalInterface.call("flashlsEvents.onComplete", ExternalInterface.objectID);
+                
             }
         };
 
         protected function _errorHandler(event : HLSEvent) : void {
             if (ExternalInterface.available) {
                 var hlsError : HLSError = event.error;
-                ExternalInterface.call("onError", hlsError.code, hlsError.url, hlsError.msg);
+                ExternalInterface.call("flashlsEvents.onError", ExternalInterface.objectID, hlsError.code, hlsError.url, hlsError.msg);
             }
         };
 
         protected function _fragmentLoadedHandler(event : HLSEvent) : void {
             if (ExternalInterface.available) {
-                ExternalInterface.call("onFragmentLoaded", event.loadMetrics);
+                ExternalInterface.call("flashlsEvents.onFragmentLoaded", ExternalInterface.objectID, event.loadMetrics);
             }
         };
 
         protected function _fragmentPlayingHandler(event : HLSEvent) : void {
             if (ExternalInterface.available) {
-                ExternalInterface.call("onFragmentPlaying", event.playMetrics);
+                ExternalInterface.call("flashlsEvents.onFragmentPlaying", ExternalInterface.objectID, event.playMetrics);
             }
         };
 
@@ -161,7 +165,7 @@ package org.mangui.chromeless {
             }
 
             if (ExternalInterface.available) {
-                ExternalInterface.call("onManifest", _duration);
+                ExternalInterface.call("flashlsEvents.onManifest", ExternalInterface.objectID, _duration);
             }
         };
 
@@ -169,7 +173,7 @@ package org.mangui.chromeless {
             _duration = event.mediatime.duration;
             _media_position = event.mediatime.position;
             if (ExternalInterface.available) {
-                ExternalInterface.call("onPosition", event.mediatime);
+                ExternalInterface.call("flashlsEvents.onPosition", ExternalInterface.objectID, event.mediatime);
             }
 
             var videoWidth : int = _video ? _video.videoWidth : _stageVideo.videoWidth;
@@ -182,7 +186,7 @@ package org.mangui.chromeless {
                     _videoWidth = videoWidth;
                     _resize();
                     if (ExternalInterface.available) {
-                        ExternalInterface.call("onVideoSize", _videoWidth, _videoHeight);
+                        ExternalInterface.call("flashlsEvents.onVideoSize", ExternalInterface.objectID, _videoWidth, _videoHeight);
                     }
                 }
             }
@@ -190,25 +194,25 @@ package org.mangui.chromeless {
 
         protected function _stateHandler(event : HLSEvent) : void {
             if (ExternalInterface.available) {
-                ExternalInterface.call("onState", event.state);
+                ExternalInterface.call("flashlsEvents.onState", ExternalInterface.objectID, event.state);
             }
         };
 
         protected function _levelSwitchHandler(event : HLSEvent) : void {
             if (ExternalInterface.available) {
-                ExternalInterface.call("onSwitch", event.level);
+                ExternalInterface.call("flashlsEvents.onSwitch", ExternalInterface.objectID, event.level);
             }
         };
 
         protected function _audioTracksListChange(event : HLSEvent) : void {
             if (ExternalInterface.available) {
-                ExternalInterface.call("onAudioTracksListChange", _getAudioTrackList());
+                ExternalInterface.call("flashlsEvents.onAudioTracksListChange", ExternalInterface.objectID, _getAudioTrackList());
             }
         }
 
         protected function _audioTrackChange(event : HLSEvent) : void {
             if (ExternalInterface.available) {
-                ExternalInterface.call("onAudioTrackChange", event.audioTrack);
+                ExternalInterface.call("flashlsEvents.onAudioTrackChange", ExternalInterface.objectID, event.audioTrack);
             }
         }
 
@@ -263,6 +267,10 @@ package org.mangui.chromeless {
 
         protected function _getlowBufferLength() : Number {
             return HLSSettings.lowBufferLength;
+        };
+
+        protected function _getmaxBackBufferLength() : Number {
+            return HLSSettings.maxBackBufferLength;
         };
 
         protected function _getflushLiveURLCache() : Boolean {
@@ -368,6 +376,10 @@ package org.mangui.chromeless {
             HLSSettings.lowBufferLength = new_len;
         };
 
+        protected function _setbackBufferLength(new_len : Number) : void {
+            HLSSettings.maxBackBufferLength = new_len;
+        };
+
         protected function _setflushLiveURLCache(flushLiveURLCache : Boolean) : void {
             HLSSettings.flushLiveURLCache = flushLiveURLCache;
         };
@@ -435,7 +447,7 @@ package org.mangui.chromeless {
             _hls.addEventListener(HLSEvent.PLAYBACK_STATE, _stateHandler);
             _hls.addEventListener(HLSEvent.LEVEL_SWITCH, _levelSwitchHandler);
             _hls.addEventListener(HLSEvent.AUDIO_TRACKS_LIST_CHANGE, _audioTracksListChange);
-            _hls.addEventListener(HLSEvent.AUDIO_TRACK_CHANGE, _audioTrackChange);
+            _hls.addEventListener(HLSEvent.AUDIO_TRACK_SWITCH, _audioTrackChange);
 
             if (available && stage.stageVideos.length > 0) {
                 _stageVideo = stage.stageVideos[0];
