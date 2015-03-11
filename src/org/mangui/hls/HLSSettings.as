@@ -42,7 +42,7 @@ package org.mangui.hls {
          *
          * Default is 120.
          */
-        public static var maxBufferLength : Number = 120;
+        public static var maxBufferLength : Number = 600;
         /**
          * Defines maximum back buffer length in seconds.
          * (0 means infinite back buffering)
