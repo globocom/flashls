@@ -45,6 +45,8 @@ package com.globo {
       ExternalInterface.addCallback("globoGetLastProgramDate", _getLastProgramDate);
       ExternalInterface.addCallback("globoGetDroppedFrames", _getDroppedFrames);
       ExternalInterface.addCallback("globoRemoveLevel", _removeLevel);
+      ExternalInterface.addCallback("getAudioTrackList", _getAudioTrackList);
+      ExternalInterface.addCallback("getAudioTrackId", _getAudioTrackId);
     }
 
     override protected function _setupExternalCallers():void {
@@ -63,6 +65,7 @@ package com.globo {
       ExternalInterface.addCallback("globoPlayerSetminBufferLength", _setminBufferLength);
       ExternalInterface.addCallback("globoPlayerSetlowBufferLength", _setlowBufferLength);
       ExternalInterface.addCallback("globoPlayerCapLeveltoStage", _setCapLeveltoStage);
+      ExternalInterface.addCallback("playerSetAudioTrack", _setAudioTrack);
     };
 
     private function _triggerEvent(eventName: String, param:String=null):void {
