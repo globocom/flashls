@@ -74,7 +74,7 @@ package com.globo {
     };
 
     protected function flashReady(): void {
-      ExternalInterface.call("console.log", "HLS Initialized (0.2.6 - id: " + this.playbackId + ")");
+      ExternalInterface.call("console.log", "HLS Initialized (0.2.7 - id: " + this.playbackId + ")");
       _triggerEvent('flashready');
     };
 
